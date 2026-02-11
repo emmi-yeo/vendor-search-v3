@@ -2,14 +2,9 @@
 pandas
 numpy
 requests
-beautifulsoup4
 faiss-cpu
 rank-bm25
 python-dateutil
-sentence-transformers>=2.7.0
-transformers>=4.41.0
-huggingface_hub>=0.23.0
-torch
 groq
 python-dotenv
 rapidfuzz
