@@ -1,10 +1,13 @@
-﻿streamlit
+streamlit
 pandas
 numpy
 requests
 faiss-cpu
 rank-bm25
 python-dateutil
+sentence-transformers>=2.7.0
+transformers>=4.41.0
+torch
 groq
 python-dotenv
 rapidfuzz
@@ -13,4 +16,3 @@ reportlab
 PyPDF2
 python-docx
 xlsxwriter
-sentence-transformers>=2.7.0
