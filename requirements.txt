@@ -13,3 +13,4 @@ reportlab
 PyPDF2
 python-docx
 xlsxwriter
+sentence-transformers>=2.7.0
