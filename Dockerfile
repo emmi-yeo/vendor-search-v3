@@ -20,6 +20,7 @@ COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --upgrade pip
+RUN pip install numpy==1.26.4
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app files
