@@ -1,3 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 streamlit
 pandas
 numpy
@@ -7,7 +9,7 @@ rank-bm25
 python-dateutil
 sentence-transformers>=2.7.0
 transformers>=4.41.0
-torch
+torch==2.2.2+cpu
 groq
 python-dotenv
 rapidfuzz
@@ -16,3 +18,4 @@ reportlab
 PyPDF2
 python-docx
 xlsxwriter
+
