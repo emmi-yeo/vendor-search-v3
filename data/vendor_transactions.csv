@@ -1,0 +1,11 @@
+vendor_id,txn_id,buyer_dept,category,value,date,status,notes
+V001,T1001,ICT Security,Cybersecurity,250000,2024-09-15,Awarded,"SOC monitoring contract for 12 months"
+V001,T1022,ICT Security,Cybersecurity,180000,2025-01-05,Awarded,"Penetration testing and incident response"
+V002,T1005,Digital Services,IT Services,120000,2024-08-20,Awarded,"System integration for internal ERP"
+V003,T1010,Facilities,Construction,1500000,2023-12-01,Awarded,"Office building construction phase 1"
+V005,T1015,Cloud Platform,Cloud Services,300000,2024-11-18,Awarded,"Managed cloud hosting services"
+V007,T1020,Healthcare IT,Healthcare IT,500000,2024-10-10,Awarded,"Hospital information system upgrade"
+V008,T1008,Logistics,Logistics,90000,2024-07-05,Awarded,"Warehousing and delivery services"
+V009,T1025,Data Office,Data Analytics,200000,2025-01-08,Quoted,"AI analytics pilot project"
+V010,T1018,Critical Ops,Cybersecurity,400000,2024-12-12,Awarded,"OT security assessment for infrastructure"
+V010,T1029,Critical Ops,Cybersecurity,350000,2025-01-02,Quoted,"Threat intelligence subscription"
