@@ -19,6 +19,8 @@ reportlab
 PyPDF2
 python-docx
 xlsxwriter
+beautifulsoup4
+
 
 
 
