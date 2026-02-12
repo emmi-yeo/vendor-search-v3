@@ -1,4 +1,5 @@
-from src.groq_client import groq_chat
+#from src.groq_client import groq_chat
+from src.azure_llm import azure_chat as groq_chat
 import json
 
 def parse_presentation_instructions(user_text: str) -> dict:
@@ -40,3 +41,4 @@ Rules:
         return json.loads(raw)
     except Exception:
         return {}
+
