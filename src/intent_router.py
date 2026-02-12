@@ -1,6 +1,7 @@
 ﻿import json
 from typing import Dict, List
-from src.groq_client import groq_chat
+#from src.groq_client import groq_chat
+from src.azure_llm import azure_chat as groq_chat
 
 INTENT_SYSTEM_PROMPT = """
 You are an intent classifier for a procurement vendor AI assistant.
@@ -68,3 +69,4 @@ def route_intent(user_text: str, recent_vendor_ids: List[str] = None) -> Dict:
             "vendor_name_or_id": None,
             "requested_field": None
         }
+
