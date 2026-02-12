@@ -20,6 +20,8 @@ PyPDF2
 python-docx
 xlsxwriter
 beautifulsoup4
+openai==1.30.1
+
 
 
 
