@@ -1,5 +1,6 @@
 ﻿import json
-from src.groq_client import groq_chat
+#from src.groq_client import groq_chat
+from src.azure_llm import azure_chat as groq_chat
 
 PARSER_SYSTEM = """You are a procurement vendor search query parser.
 Return ONLY valid JSON (no markdown).
@@ -215,3 +216,4 @@ def parse_query(model: str, user_text: str, ui_filters: dict, file_context: str 
         q["filters"]["location"]["city"] = ui_filters["city"]
 
     return q
+
