@@ -195,7 +195,7 @@ def render_search_results_in_chat(
                 key=f"pdf_{render_id}"
             )
 
-st.title("🤖 Vendor AI Search POC (Chat + Filters)")
+st.title("🤖 Vendor Search v0.1")
     
 # Predefined prompts
 with st.sidebar.expander("💡 Quick Prompts"):
@@ -726,4 +726,5 @@ Please provide a clear, comprehensive answer about the file content. If the ques
         })
 
         st.session_state["_last_handled_query"] = user_text
+
         st.rerun()
