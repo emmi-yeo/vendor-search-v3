@@ -544,7 +544,8 @@ File content:
 
 Please provide a clear, comprehensive answer about the file content. If the question is about a company/organization, extract and identify it. If asking for a summary, provide a structured overview of the document."""
             
-        from src.groq_client import groq_chat
+        #from src.groq_client import groq_chat
+        from src.azure_llm import azure_chat as groq_chat
         messages = [
             {"role": "system", "content": "You are a helpful assistant that analyzes documents and answers questions about their content. Provide detailed, accurate answers based on the file content."},
             {"role": "user", "content": analysis_prompt}
@@ -728,3 +729,4 @@ Please provide a clear, comprehensive answer about the file content. If the ques
         st.session_state["_last_handled_query"] = user_text
 
         st.rerun()
+
