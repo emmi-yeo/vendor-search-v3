@@ -1,5 +1,6 @@
 import json
-from src.groq_client import groq_chat
+#from src.groq_client import groq_chat
+from src.azure_llm import azure_chat as groq_chat
 
 PRESENTATION_SYSTEM_PROMPT = """
 You decide how search results should be presented.
@@ -44,3 +45,4 @@ Number of results: {result_count}
     except Exception:
         # Safe fallback
         return {"mode": "table", "reason": "default"}
+
