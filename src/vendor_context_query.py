@@ -3,7 +3,8 @@ Handle vendor context queries - queries about vendor performance, sourcing event
 """
 import re
 from typing import Dict, Optional, Tuple
-from src.groq_client import groq_chat
+#from src.groq_client import groq_chat
+from src.azure_llm import azure_chat as groq_chat
 from src.vendor_context import get_vendor_context
 import pandas as pd
 
@@ -382,4 +383,5 @@ def answer_context_query(
                     answer_parts.append(f"- {headline} ({source})")
 
     return "\n".join(answer_parts)
+
 
