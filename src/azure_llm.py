@@ -59,15 +59,20 @@ def azure_chat(
     try:
         client = _get_client()
         model = _get_chat_model()
+        prompt = ""
+        for msg in messages:
+            role = msg.get("role","user")
+            content = msg.get("content","")
+            prompt += f"{role.upper()}: {content}\n"
 
-        response = client.chat.completions.create(
+        response = client.responses.create(
             model=model,
-            messages=messages,
+            input=prompt,
             temperature=temperature,
-            max_completion_tokens=max_tokens,
+            max_output_tokens=max_tokens,
         )
 
-        return response.choices[0].message.content
+        return response.output_text
 
     except Exception as e:
         model = _get_chat_model()
