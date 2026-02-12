@@ -1,4 +1,5 @@
-from src.groq_client import groq_chat
+#from src.groq_client import groq_chat
+from src.azure_llm import azure_chat as groq_chat
 
 def translate_query_to_english(user_text: str) -> str:
     """
@@ -26,3 +27,4 @@ def translate_query_to_english(user_text: str) -> str:
     translated = groq_chat(messages, temperature=0)
 
     return translated.strip()
+
