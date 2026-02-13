@@ -726,13 +726,6 @@ Please provide a clear, comprehensive answer about the file content. If the ques
 
         st.rerun()
 
-        else:
-                # Vendor not found, proceed with search
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": f"Vendor '{vendor_id}' not found. Searching for vendors instead..."
-                })
-        
     if not is_file_analysis_query and not context_query_handled:
         # q = parse_query("", translated_text, ui_filters, file_context=file_context)
         # results, filter_warning, show_only_top = run_search_from_query(q)
