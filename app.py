@@ -23,6 +23,7 @@ from src.ai_intent import classify_intent
 from src.ai_planner import generate_search_plan
 from src.ai_responder import generate_response
 from src.aggregation import aggregate_vendors
+from src.azure_sql_loader import load_vendor_tables
 
 # Load environment variables from .env file
 load_dotenv()
@@ -37,12 +38,15 @@ def hash_filters(d: dict) -> str:
 
 st.set_page_config(page_title="Vendor AI Search POC", layout="wide")
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_data():
-    profiles = pd.read_csv("data/vendor_profiles.csv")
-    attachments = pd.read_csv("data/vendor_attachments.csv")
-    txns = pd.read_csv("data/vendor_transactions.csv")
+    #profiles = pd.read_csv("data/vendor_profiles.csv")
+    #attachments = pd.read_csv("data/vendor_attachments.csv")
+    #txns = pd.read_csv("data/vendor_transactions.csv")
+    profiles, attachments = load_vendor_tables()
+    txns = pd.DataFrame()  # placeholder until we map transaction table
     return profiles, attachments, txns
+
 
 @st.cache_resource
 def init_index():
