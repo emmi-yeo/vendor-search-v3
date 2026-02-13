@@ -19,6 +19,10 @@ from src.external_enrichment import build_enrichment_profile, is_enrichment_enab
 from src.intent_router import route_intent
 from src.vendor_context import get_vendor_fact
 from src.query_translation import translate_query_to_english
+from src.ai_intent import classify_intent
+from src.ai_planner import generate_search_plan
+from src.ai_responder import generate_response
+from src.aggregation import aggregate_vendors
 
 # Load environment variables from .env file
 load_dotenv()
@@ -282,8 +286,8 @@ def is_presentation_only_request(text: str) -> bool:
 # Auto-rerun ONLY when filters actually changed (and we have a prior query)
 if st.session_state.last_query and (current_filter_hash != st.session_state.last_filter_hash):
     # model parameter kept for compatibility but not used (uses Groq from env)
-    refreshed = parse_query("", st.session_state.last_query["search_text"], ui_filters)
-    results, filter_warning, show_only_top = run_search_from_query(refreshed)
+    # refreshed = parse_query("", st.session_state.last_query["search_text"], ui_filters)
+    # results, filter_warning, show_only_top = run_search_from_query(refreshed)
 
     # Append as a real assistant message (conversation-friendly)
     lines = []
@@ -424,13 +428,13 @@ if user_input or pending_query:
     # 🎨 PRESENTATION-ONLY COMMAND (NEW TABLE, SAME DATA)
     # --------------------------------------------------
 
-    if is_presentation_only_request(user_text):
-        if not st.session_state.get("last_results"):
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "There are no previous search results to format yet."
-            })
-            st.rerun()
+    # if is_presentation_only_request(user_text):
+    #    if not st.session_state.get("last_results"):
+    #        st.session_state.messages.append({
+    #            "role": "assistant",
+    #            "content": "There are no previous search results to format yet."
+    #        })
+    #        st.rerun()
 
         from src.presentation_instructions import parse_presentation_instructions
 
@@ -564,57 +568,163 @@ Please provide a clear, comprehensive answer about the file content. If the ques
     # Check if user is asking about vendor context (performance, sourcing events, etc.)
     # Only check if not a file analysis query
     context_query_handled = False
-    if not is_file_analysis_query:
+    #if not is_file_analysis_query:
         # Get recent vendor IDs from last search results for context
-        recent_vendor_ids = []
+    #    recent_vendor_ids = []
 
         # Detect if this is a vendor context query
-        context_detection = detect_context_query(translated_text, recent_vendor_ids)
+    #    context_detection = detect_context_query(translated_text, recent_vendor_ids)
             
-        if context_detection.get('is_context_query') and context_detection.get('vendor_identifier'):
-            vendor_identifier = context_detection['vendor_identifier']
-            context_type = context_detection.get('context_type', 'general')
-            query_intent = context_detection.get('query_intent', user_text)
+    #    if context_detection.get('is_context_query') and context_detection.get('vendor_identifier'):
+    #        vendor_identifier = context_detection['vendor_identifier']
+    #        context_type = context_detection.get('context_type', 'general')
+    #        query_intent = context_detection.get('query_intent', user_text)
                 
             # Find vendor by ID, name, or "this vendor"/"that vendor"
-            from src.vendor_context_query import find_vendor_by_identifier
-            vendor_found = find_vendor_by_identifier(vendor_identifier, profiles, recent_vendor_ids)
+    #        from src.vendor_context_query import find_vendor_by_identifier
+    #        vendor_found = find_vendor_by_identifier(vendor_identifier, profiles, recent_vendor_ids)
                 
-            if vendor_found:
+    #        if vendor_found:
                 # Generate context answer (optionally with external enrichment)
-                enrichment = None
-                if EXTERNAL_ENRICHMENT_ENABLED and is_enrichment_enabled():
-                    try:
-                        v_row = profiles[profiles["vendor_id"] == vendor_found].iloc[0]
-                        vendor_profile = {
-                            "vendor_id": vendor_found,
-                            "vendor_name": v_row.get("vendor_name", ""),
-                            "country": v_row.get("country", ""),
-                            "city": v_row.get("city", ""),
-                            "industry": v_row.get("industry", ""),
-                        }
-                        enrichment = build_enrichment_profile(vendor_profile)
-                    except Exception:
-                        enrichment = None
+    #            enrichment = None
+    #            if EXTERNAL_ENRICHMENT_ENABLED and is_enrichment_enabled():
+    #                try:
+    #                    v_row = profiles[profiles["vendor_id"] == vendor_found].iloc[0]
+    #                    vendor_profile = {
+    #                        "vendor_id": vendor_found,
+    #                        "vendor_name": v_row.get("vendor_name", ""),
+    #                        "country": v_row.get("country", ""),
+    #                        "city": v_row.get("city", ""),
+    #                        "industry": v_row.get("industry", ""),
+    #                    }
+    #                    enrichment = build_enrichment_profile(vendor_profile)
+    #                except Exception:
+    #                    enrichment = None
 
-                with st.spinner(f"Analyzing vendor context for {vendor_found}..."):
-                    context_answer = answer_context_query(
-                        vendor_found,
-                        context_type,
-                        query_intent,
-                        profiles,
-                        txns,
-                        attachments,
-                        enrichment=enrichment,
-                    )
-                    
-                # Display the context answer
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": context_answer
-                })
-                context_query_handled = True
-                st.rerun()
+    #            with st.spinner(f"Analyzing vendor context for {vendor_found}..."):
+    #                context_answer = answer_context_query(
+    #                    vendor_found,
+    #                    context_type,
+    #                    query_intent,
+    #                    profiles,
+    #                    txns,
+    #                    attachments,
+    #                    enrichment=enrichment,
+    #                )
+    #                
+    #            # Display the context answer
+    #            st.session_state.messages.append({
+    #                "role": "assistant",
+    #                "content": context_answer
+    #            })
+    #            context_query_handled = True
+    #            st.rerun()
+    # ------------------------------------------------------------------
+    # 🤖 AI-DRIVEN SEARCH EXECUTION (REPLACES OLD PARSE LOGIC)
+    # ------------------------------------------------------------------
+
+    if not is_file_analysis_query and not context_query_handled:
+
+        # 🔒 Prevent full database dump
+        dangerous_phrases = [
+            "all vendors",
+            "entire database",
+            "full list",
+            "everything",
+            "show all"
+        ]
+
+        if any(p in translated_text.lower() for p in dangerous_phrases):
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": (
+                    "For governance and performance reasons, "
+                    "I cannot display the full vendor database at once.\n\n"
+                    "Please narrow your request by industry, location, "
+                    "certification, or capability."
+                )
+            })
+            st.rerun()
+
+        # 🧠 1️⃣ Intent Classification
+        intent_data = classify_intent(translated_text)
+        ai_intent = intent_data.get("intent", "search_vendors")
+
+        # 🧮 2️⃣ Aggregation Requests
+        if ai_intent == "aggregate":
+            plan = generate_search_plan(translated_text)
+
+            aggregation_result = aggregate_vendors(meta, plan["filters"])
+
+            ai_reply = generate_response(
+                translated_text,
+                results=[],
+                aggregation=aggregation_result
+            )
+
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": ai_reply
+            })
+
+            st.rerun()
+
+        # 🔍 3️⃣ Vendor Search
+        if ai_intent == "search_vendors":
+
+            plan = generate_search_plan(translated_text)
+
+            filters = plan.get("filters", {})
+            limit = min(plan.get("limit", 10), 20)
+
+            # Run hybrid search
+            results, filter_warning, show_only_top = search(
+                index,
+                bm25,
+                docs,
+                meta,
+                translated_text,
+                filters,
+                {},
+                [],
+                "",
+                top_k=limit
+            )
+
+            # Apply sidebar sorting
+            sort_key = SORT_OPTIONS.get(sort_by, "relevance")
+            results = sort_results(results, sort_key)
+
+            # Save state
+            st.session_state.last_results = results
+            st.session_state.last_query = plan
+
+            # 🤖 Generate AI explanation
+            ai_reply = generate_response(
+                translated_text,
+                results=results
+            )
+
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": ai_reply,
+                "table": {
+                    "results": results,
+                    "query_json": {
+                        "render_id": str(uuid.uuid4())
+                    }
+                }
+            })
+
+            st.rerun()
+
+        # 🧾 Fallback
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": "I couldn’t interpret that request clearly. Could you rephrase it?"
+        })
+
+        st.rerun()
 
             else:
                 # Vendor not found, proceed with search
@@ -624,8 +734,8 @@ Please provide a clear, comprehensive answer about the file content. If the ques
                 })
         
     if not is_file_analysis_query and not context_query_handled:
-        q = parse_query("", translated_text, ui_filters, file_context=file_context)
-        results, filter_warning, show_only_top = run_search_from_query(q)
+        # q = parse_query("", translated_text, ui_filters, file_context=file_context)
+        # results, filter_warning, show_only_top = run_search_from_query(q)
         st.session_state.last_filter_hash = current_filter_hash
         if show_only_top:
             st.markdown("_High-confidence match found — showing top results only._")
