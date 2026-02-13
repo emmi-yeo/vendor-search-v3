@@ -6,42 +6,31 @@ _client = None
 
 
 def _get_api_key():
-    """Get AZURE_OPENAI_KEY from environment."""
     api_key = os.getenv("AZURE_OPENAI_KEY", "")
     if not api_key:
-        raise RuntimeError(
-            "AZURE_OPENAI_KEY environment variable is not set."
-        )
+        raise RuntimeError("AZURE_OPENAI_KEY is not set.")
     return api_key
 
 
 def _get_endpoint():
-    """Get AZURE_OPENAI_ENDPOINT from environment."""
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
     if not endpoint:
-        raise RuntimeError(
-            "AZURE_OPENAI_ENDPOINT environment variable is not set."
-        )
+        raise RuntimeError("AZURE_OPENAI_ENDPOINT is not set.")
     return endpoint
 
 
 def _get_chat_model():
-    """
-    Get Azure deployment name.
-    IMPORTANT: This must match the Deployment Name
-    you created in Azure, NOT the base model name.
-    """
+    # Must match Deployment Name in Foundry
     return os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5-nano")
 
 
 def _get_client():
-    """Lazy initialization of Azure OpenAI client."""
     global _client
     if _client is None:
         _client = AzureOpenAI(
-            api_key=_get_api_key(),
-            api_version="2024-02-15-preview",
+            api_version="2024-12-01-preview",
             azure_endpoint=_get_endpoint(),
+            api_key=_get_api_key(),
         )
     return _client
 
@@ -52,33 +41,25 @@ def azure_chat(
     max_tokens: int = 512,
 ) -> str:
     """
-    Chat completion via Azure OpenAI.
-    Compatible with existing Groq message format:
-    [{"role":"system|user|assistant","content":"..."}]
+    Compatible with your existing groq_chat signature.
     """
+
     try:
         client = _get_client()
-        model = _get_chat_model()
-        prompt = ""
-        for msg in messages:
-            role = msg.get("role","user")
-            content = msg.get("content","")
-            prompt += f"{role.upper()}: {content}\n"
+        deployment = _get_chat_model()
 
-        response = client.responses.create(
-            model=model,
-            input=prompt,
+        response = client.chat.completions.create(
+            model=deployment,
+            messages=messages,
             temperature=temperature,
-            max_output_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
         )
 
-        return response.output_text
+        return response.choices[0].message.content
 
     except Exception as e:
-        model = _get_chat_model()
         raise RuntimeError(
             f"Azure OpenAI chat failed. "
-            f"AZURE_OPENAI_DEPLOYMENT={model}. "
-            f"Check AZURE_OPENAI_KEY, endpoint, and deployment name. "
+            f"Deployment={_get_chat_model()}. "
             f"Error: {e}"
         )
