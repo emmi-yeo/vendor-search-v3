@@ -1,27 +1,21 @@
 import os
-import pyodbc
+import pymssql
 import pandas as pd
 
 
 def get_connection():
-    conn_str = (
-        "DRIVER={ODBC Driver 18 for SQL Server};"
-        f"SERVER={os.getenv('AZURE_SQL_SERVER')};"
-        f"DATABASE={os.getenv('AZURE_SQL_DATABASE')};"
-        f"UID={os.getenv('AZURE_SQL_USERNAME')};"
-        f"PWD={os.getenv('AZURE_SQL_PASSWORD')};"
-        "Encrypt=yes;"
-        "TrustServerCertificate=no;"
-        "Connection Timeout=30;"
+    return pymssql.connect(
+        server=os.getenv("AZURE_SQL_SERVER"),
+        user=os.getenv("AZURE_SQL_USERNAME"),
+        password=os.getenv("AZURE_SQL_PASSWORD"),
+        database=os.getenv("AZURE_SQL_DATABASE"),
+        port=1433
     )
-    return pyodbc.connect(conn_str)
 
 
 def load_vendor_tables():
-
     conn = get_connection()
 
-    # --- Vendor Profile ---
     profiles_query = """
     SELECT
         Id AS vendor_id,
@@ -44,9 +38,6 @@ def load_vendor_tables():
     WHERE IsDeleted = 0
     """
 
-    profiles = pd.read_sql(profiles_query, conn)
-
-    # --- Vendor Attachments ---
     attachments_query = """
     SELECT
         Id AS attachment_id,
@@ -59,11 +50,11 @@ def load_vendor_tables():
     WHERE IsDeleted = 0
     """
 
+    profiles = pd.read_sql(profiles_query, conn)
     attachments = pd.read_sql(attachments_query, conn)
 
     conn.close()
 
-    # --- Derive Certifications ---
     profiles["certifications"] = profiles.apply(
         lambda row: ",".join(
             [
@@ -75,7 +66,6 @@ def load_vendor_tables():
         axis=1
     )
 
-    # --- Build Location Column ---
     profiles["location"] = (
         profiles["state"].fillna("") + " / " +
         profiles["city"].fillna("")
