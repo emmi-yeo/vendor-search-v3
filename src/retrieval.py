@@ -23,7 +23,7 @@ WEIGHTS = {
     "attachment_boost": 0.12,  # Boost when attachment content matches
 }
 
-MIN_DISPLAY_SCORE = 0.05   # hide super-weak matches
+MIN_DISPLAY_SCORE = 0.35   # hide super-weak matches
 CLAMP_MIN = 0.0            # displayed scores never negative
 
 def norm(s: str) -> str:
@@ -310,15 +310,11 @@ def search(index, bm25, docs, meta, query_text: str, filters: dict, constraints:
 
     # Only global fallback if we truly have ZERO candidates even after relaxation.
     if not allowed:
-        allowed = list(range(len(meta)))
-        filter_warning = has_any_strict
-        did_relax = True
+        return [], True, False
     else:
         # If we found candidates under strict or relaxed constraints, DO NOT global fallback.
         filter_warning = did_relax
         constraints = used_constraints
-
-
 
     from src.local_embedder import embed_text
     vec = embed_text(query_text)
@@ -529,4 +525,5 @@ def search(index, bm25, docs, meta, query_text: str, filters: dict, constraints:
             payload = payload[:3]
 
     return payload, filter_warning, show_only_top
+
 
