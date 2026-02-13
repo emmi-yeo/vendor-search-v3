@@ -51,7 +51,6 @@ def azure_chat(
         response = client.chat.completions.create(
             model=deployment,
             messages=messages,
-            temperature=temperature,
             max_completion_tokens=max_tokens,
         )
 
