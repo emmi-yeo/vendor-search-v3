@@ -726,7 +726,7 @@ Please provide a clear, comprehensive answer about the file content. If the ques
 
         st.rerun()
 
-            else:
+        else:
                 # Vendor not found, proceed with search
                 st.session_state.messages.append({
                     "role": "assistant",
