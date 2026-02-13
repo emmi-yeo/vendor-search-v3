@@ -428,20 +428,21 @@ if user_input or pending_query:
     # 🎨 PRESENTATION-ONLY COMMAND (NEW TABLE, SAME DATA)
     # --------------------------------------------------
 
-    # if is_presentation_only_request(user_text):
-    #    if not st.session_state.get("last_results"):
-    #        st.session_state.messages.append({
-    #            "role": "assistant",
-    #            "content": "There are no previous search results to format yet."
-    #        })
-    #        st.rerun()
+    if is_presentation_only_request(user_text):
+        # we need previous results to re-render with a different layout
+        if not st.session_state.get("last_results"):
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "There are no previous search results to format yet."
+            })
+            st.rerun()
 
         from src.presentation_instructions import parse_presentation_instructions
 
         instructions = parse_presentation_instructions(user_text)
-        q = dict(st.session_state.last_query)
+        # safe fallback if last_query is None
+        q = dict(st.session_state.last_query or {})
         q["render_id"] = str(uuid.uuid4())
-
 
         # Create a NEW assistant message with SAME results, NEW presentation
         st.session_state.messages.append({
@@ -453,7 +454,6 @@ if user_input or pending_query:
             },
             "presentation": instructions
         })
-
 
         st.rerun()
 
