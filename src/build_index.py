@@ -26,7 +26,7 @@ def build_vendor_documents(profiles, attachments, txns):
             att_info.append({"name": att_name, "type": att_type, "text": att_text})
         att_g[vid] = "\n".join(att_texts)
         att_meta[vid] = att_info
-    
+  
     tx_g = txns.groupby("vendor_id").apply(
         lambda df: f"Recent transactions: {len(df)} | Latest: {df['date'].max()} | Categories: {', '.join(df['category'].astype(str).head(5))}"
     ).to_dict()

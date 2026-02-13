@@ -44,7 +44,14 @@ def load_data():
     #attachments = pd.read_csv("data/vendor_attachments.csv")
     #txns = pd.read_csv("data/vendor_transactions.csv")
     profiles, attachments = load_vendor_tables()
-    txns = pd.DataFrame()  # placeholder until we map transaction table
+    txns = pd.DataFrame(columns=[
+    "vendor_id",
+    "total_spend",
+    "performance_score",
+    "compliance_score",
+    "risk_score"
+    ])
+    # placeholder until we map transaction table
     return profiles, attachments, txns
 
 
