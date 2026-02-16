@@ -16,28 +16,38 @@ def get_connection():
 def load_vendor_tables():
     conn = get_connection()
 
+    # =========================
+    # VENDOR PROFILES (ENRICHED)
+    # =========================
     profiles_query = """
     SELECT
-        Id AS vendor_id,
-        VendorId,
-        CompanyName AS vendor_name,
-        BusinessActivityDescription AS industry,
-        RegisteredState AS state,
-        RegisteredCity AS city,
-        Status,
-        IsSupplier,
-        IsContractor,
-        IsConsultant,
-        IsMOF,
-        IsST,
-        IsBumiputera,
-        BusinessStreet1,
-        BusinessStreet2,
-        BusinessStreet3
-    FROM VendorProfile
-    WHERE IsDeleted = 0
+        vp.Id AS vendor_id,
+        vp.VendorId,
+        vp.CompanyName AS vendor_name,
+        vp.BusinessActivityDescription AS industry,
+        vp.RegisteredState AS state,
+        vp.RegisteredCity AS city,
+        cl.Country AS country,
+        vp.Status,
+        vp.IsSupplier,
+        vp.IsContractor,
+        vp.IsConsultant,
+        vp.IsMOF,
+        vp.IsST,
+        vp.IsBumiputera,
+        vp.BusinessStreet1,
+        vp.BusinessStreet2,
+        vp.BusinessStreet3,
+        vp.CreatedOn
+    FROM VendorProfile vp
+    LEFT JOIN CountryLocation cl
+        ON vp.RegisteredCountryId = cl.CountryId
+    WHERE vp.IsDeleted = 0
     """
 
+    # =========================
+    # ATTACHMENTS
+    # =========================
     attachments_query = """
     SELECT
         Id AS attachment_id,
@@ -55,20 +65,52 @@ def load_vendor_tables():
 
     conn.close()
 
-    profiles["certifications"] = profiles.apply(
-        lambda row: ",".join(
-            [
-                "MOF" if row.get("IsMOF") else "",
-                "ST" if row.get("IsST") else "",
-                "Bumiputera" if row.get("IsBumiputera") else ""
-            ]
-        ).strip(","),
-        axis=1
-    )
+    # =========================
+    # SAFE COLUMN NORMALIZATION
+    # =========================
+    profiles.columns = [c.lower() for c in profiles.columns]
+    attachments.columns = [c.lower() for c in attachments.columns]
 
+    # =========================
+    # CERTIFICATIONS DERIVED FIELD
+    # =========================
+    def build_certifications(row):
+        certs = []
+        if row.get("ismof"):
+            certs.append("MOF")
+        if row.get("isst"):
+            certs.append("ST")
+        if row.get("isbumiputera"):
+            certs.append("Bumiputera")
+        return ",".join(certs)
+
+    profiles["certifications"] = profiles.apply(build_certifications, axis=1)
+
+    # =========================
+    # LOCATION FIELD (for backward compatibility)
+    # =========================
     profiles["location"] = (
+        profiles["country"].fillna("") + " / " +
         profiles["state"].fillna("") + " / " +
         profiles["city"].fillna("")
     )
+
+    # =========================
+    # ENSURE REQUIRED COLUMNS EXIST
+    # (prevents KeyError in AI layer)
+    # =========================
+    required_columns = [
+        "vendor_id",
+        "vendor_name",
+        "industry",
+        "country",
+        "state",
+        "city",
+        "certifications"
+    ]
+
+    for col in required_columns:
+        if col not in profiles.columns:
+            profiles[col] = ""
 
     return profiles, attachments

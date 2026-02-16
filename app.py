@@ -82,7 +82,7 @@ st.sidebar.header("Filters")
 sort_by = st.sidebar.selectbox("Sort by", list(SORT_OPTIONS.keys()), index=0)
 
 all_industries = sorted({str(x) for x in profiles["industry"].dropna().unique()})
-all_countries = sorted({str(x) for x in profiles["country"].dropna().unique()})
+#all_countries = sorted({str(x) for x in profiles["country"].dropna().unique()})
 all_states = sorted({str(x) for x in profiles["state"].dropna().unique()})
 all_cities = sorted({str(x) for x in profiles["city"].dropna().unique()})
 
