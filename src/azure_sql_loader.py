@@ -12,6 +12,18 @@ def get_connection():
         port=1433
     )
 
+def normalize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    for col in df.columns:
+        # Convert UUID objects to string
+        if df[col].apply(lambda x: hasattr(x, "hex") if x is not None else False).any():
+            df[col] = df[col].astype(str)
+
+        # Convert datetime to ISO string
+        if "datetime" in str(df[col].dtype).lower():
+            df[col] = df[col].astype(str)
+
+    return df
+
 
 def load_vendor_tables():
     conn = get_connection()
@@ -60,8 +72,8 @@ def load_vendor_tables():
     WHERE IsDeleted = 0
     """
 
-    profiles = pd.read_sql(profiles_query, conn)
-    attachments = pd.read_sql(attachments_query, conn)
+    profiles = normalize_dataframe(pd.read_sql(profiles_query, conn))
+    attachments = normalize_dataframe(pd.read_sql(attachments_query, conn))
 
     conn.close()
 

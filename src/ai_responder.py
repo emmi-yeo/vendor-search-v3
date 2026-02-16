@@ -1,5 +1,8 @@
 from src.azure_llm import azure_chat
 import json
+import uuid
+import datetime
+import decimal
 
 def generate_response(user_text: str, results: list[dict], aggregation=None) -> str:
 
@@ -15,7 +18,7 @@ User question:
 "{user_text}"
 
 Database results:
-{json.dumps(context, indent=2)}
+{json.dumps(context, indent=2, default=str)}
 
 Rules:
 - Use only provided data.
