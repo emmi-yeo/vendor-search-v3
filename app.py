@@ -414,6 +414,13 @@ if user_input or pending_query:
             # Dict-like object (ChatInputValue) when files are enabled - supports attribute notation
             user_text = getattr(user_input, "text", "") or ""
             uploaded_files = getattr(user_input, "files", []) or []
+            # 🚨 Detect UI-level file rejection
+            if hasattr(user_input, "files") and user_input.files == [] and user_input.text:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": "❌ File upload failed at UI level (unsupported type or too large). Please check file type and size."
+                })
+                st.stop()
         elif isinstance(user_input, (dict, str)):
             # Dictionary or string (backward compatibility)
             if isinstance(user_input, dict):
@@ -452,11 +459,15 @@ if user_input or pending_query:
         # Only process validated files
         with st.spinner("Processing uploaded files..."):
             file_contents = process_uploaded_files(validated_files)
-
-        # Only process validated files
-        with st.spinner("Processing uploaded files..."):
-            file_contents = process_uploaded_files(validated_files)
             
+        # 🚨 If file uploaded but no readable content → STOP
+        if validated_files and not file_contents:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "❌ The uploaded file contains no readable content."
+            })
+            st.stop()
+
         # Store file info for processing
         if "uploaded_files" not in st.session_state:
             st.session_state.uploaded_files = []
@@ -478,7 +489,7 @@ if user_input or pending_query:
                 st.info("Processed files: " + " | ".join(file_summary))
         
     # Process text input (or file-only input)
-    if user_text or validated_files:
+    if user_text and (not uploaded_files or validated_files):
         # Add user message to session state (will be rendered in the loop above on rerun)
         message_content = user_text
         if validated_files:
