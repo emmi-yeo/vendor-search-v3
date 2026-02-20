@@ -294,70 +294,6 @@ def is_presentation_only_request(text: str) -> bool:
     return any(k in text.lower() for k in keywords)
 
 
-# Auto-rerun ONLY when filters actually changed (and we have a prior query)
-if st.session_state.last_query and (current_filter_hash != st.session_state.last_filter_hash):
-    # model parameter kept for compatibility but not used (uses Groq from env)
-    # refreshed = parse_query("", st.session_state.last_query["search_text"], ui_filters)
-    # results, filter_warning, show_only_top = run_search_from_query(refreshed)
-
-    # Append as a real assistant message (conversation-friendly)
-    lines = []
-    if filter_warning:
-        lines.append("⚠️ No vendors matched the current filters exactly. Showing closest matches globally.")
-    lines.append("**Updated results (based on current filters):**")
-    if show_only_top:
-        lines.append("_High-confidence match found — showing top results only._")
-
-    if not results:
-        lines.append("No strong matches under the current filters. Try loosening location/certifications or adding capability keywords.")
-    else:
-        # Show logic interpretation if available
-        if refreshed.get("logic_operators"):
-            logic_info = []
-            for key, op in refreshed["logic_operators"].items():
-                if op:
-                    logic_info.append(f"{key}: {op}")
-            if logic_info:
-                lines.append(f"_Logic: {', '.join(logic_info)}_")
-            
-        for r in results:
-            score_info = f"score `{r['final_score']}`"
-            if r.get('compliance_score') is not None:
-                score_info += f" | Compliance: {r['compliance_score']} | Risk: {r['risk_score']} | Performance: {r['performance_score']}"
-            lines.append(
-                f"- **{r['vendor_name']}** (ID: `{r['vendor_id']}`) — {score_info}  \n"
-                f"  {r['industry']} | {r['location']}  \n"
-                f"  Certs: {r['certifications']}"
-            )
-            # Add ranking reasons if available
-            if r.get('ranking_reasons'):
-                reasons_text = " • ".join(r['ranking_reasons'])
-                lines.append(f"  _Ranked high because: {reasons_text}_")
-            if r.get('matched_attachments'):
-                att_text = ", ".join(r['matched_attachments'])
-                lines.append(f"  📎 _Matched attachments: {att_text}_")
-
-    msg = "\n".join(lines)
-    q_with_render = dict(q)
-    q_with_render["render_id"] = str(uuid.uuid4())
-
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": msg,
-        "table": {
-            "results": results,
-            "query_json": q_with_render
-        }
-    })
-
-
-    # Update last_filter_hash so it doesn't rerun repeatedly
-    st.session_state.last_filter_hash = current_filter_hash
-
-    # Re-render messages after appending
-    st.rerun()
-
-
 # Check for pending query from prompt button (before chat input)
 pending_query = None
 if "pending_query" in st.session_state and st.session_state.pending_query:
@@ -392,104 +328,47 @@ def validate_uploaded_file(uploaded_file):
         return False, "Uploaded file is empty."
 
     return True, "Valid"
- 
+
+supporting_files = st.file_uploader(
+    "📎 Upload supporting files",
+    type=ALLOWED_FILE_TYPES,
+    accept_multiple_files=True
+)
+            
 # New user input - always at the bottom
-user_input = st.chat_input(
-    "Ask for vendors in natural language…",
-    accept_file=True,
-    file_type=ALLOWED_FILE_TYPES,  # restrict extensions at UI level
-    max_upload_size=MAX_UPLOAD_SIZE_MB
-)   
+user_input = st.chat_input("Ask for vendors in natural language…")   
     
 # Handle user input (text and/or files) OR pending query from prompt button
 if user_input or pending_query:
-    # Use pending_query if available, otherwise extract from user_input
-    if pending_query:
-        user_text = pending_query
-        uploaded_files = []
-    else:
-        # Extract text and files from input
-        # When accept_file=True, user_input is a dict-like object with 'text' and 'files' attributes
-        if hasattr(user_input, "text") or hasattr(user_input, "files"):
-            # Dict-like object (ChatInputValue) when files are enabled - supports attribute notation
-            user_text = getattr(user_input, "text", "") or ""
-            uploaded_files = getattr(user_input, "files", []) or []
-            # 🚨 Detect UI-level file rejection
-            if hasattr(user_input, "files") and user_input.files == [] and user_input.text:
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": "❌ File upload failed at UI level (unsupported type or too large). Please check file type and size."
-                })
-                st.stop()
-        elif isinstance(user_input, (dict, str)):
-            # Dictionary or string (backward compatibility)
-            if isinstance(user_input, dict):
-                user_text = user_input.get("text", "")
-                uploaded_files = user_input.get("files", [])
-            else:
-                user_text = str(user_input)
-                uploaded_files = []
-        else:
-            # Fallback
-            user_text = str(user_input) if user_input else ""
-            uploaded_files = []
-        
-    file_contents = {}
-    validated_files = []
-    file_upload_attempted = bool(uploaded_files)
 
-    if uploaded_files:
-        for file in uploaded_files:
+    # Use pending query if exists
+    user_text = pending_query if pending_query else user_input
+
+    # =============================
+    # FILE VALIDATION
+    # =============================
+    validated_files = []
+    file_contents = {}
+
+    if supporting_files:
+        for file in supporting_files:
             is_valid, message = validate_uploaded_file(file)
 
             if not is_valid:
                 st.error(message)
-            else:
-                validated_files.append(file)
+                st.stop()
 
-        # 🚨 If user attempted upload but no valid files → STOP ENTIRE REQUEST
-        if file_upload_attempted and not validated_files:
-            st.warning("You attempted to upload files, but none were valid. Please fix the issues and try again.")
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "❌ File upload failed. Please fix the issue above before submitting your request."
-            })
-            st.stop()
+            validated_files.append(file)
 
-        # Only process validated files
         with st.spinner("Processing uploaded files..."):
             file_contents = process_uploaded_files(validated_files)
-            
-        # 🚨 If file uploaded but no readable content → STOP
-        if validated_files and not file_contents:
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "❌ The uploaded file contains no readable content."
-            })
-            st.stop()
 
-        # Store file info for processing
-        if "uploaded_files" not in st.session_state:
-            st.session_state.uploaded_files = []
-        for file in validated_files:
-            st.session_state.uploaded_files.append({
-                "name": file.name,
-                "size": file.size,
-                "type": file.type,
-                "data": file.getvalue()
-            })
-            
-        # Show file processing results
-        if file_contents:
-            file_summary = []
-            for file_name, content in file_contents.items():
-                content_preview = content[:200] + "..." if len(content) > 200 else content
-                file_summary.append(f"📎 {file_name} ({len(content)} chars)")
-            if file_summary:
-                st.info("Processed files: " + " | ".join(file_summary))
+        if validated_files and not file_contents:
+            st.error("The uploaded file contains no readable content.")
+            st.stop()
         
     # Process text input (or file-only input)
-    if user_text and (not uploaded_files or validated_files):
+    if user_text:
         # Add user message to session state (will be rendered in the loop above on rerun)
         message_content = user_text
         if validated_files:
@@ -605,7 +484,7 @@ if user_input or pending_query:
         "what information", "what details", "what data", "extract information"
     ]
         
-    is_file_analysis_query = uploaded_files and file_context and any(
+    is_file_analysis_query = supporting_files and file_context and any(
         phrase in user_text.lower() for phrase in file_analysis_queries
     )
         
@@ -621,7 +500,6 @@ File content:
 
 Please provide a clear, comprehensive answer about the file content. If the question is about a company/organization, extract and identify it. If asking for a summary, provide a structured overview of the document."""
             
-        #from src.groq_client import groq_chat
         from src.azure_llm import azure_chat as groq_chat
         messages = [
             {"role": "system", "content": "You are a helpful assistant that analyzes documents and answers questions about their content. Provide detailed, accurate answers based on the file content."},
@@ -641,57 +519,7 @@ Please provide a clear, comprehensive answer about the file content. If the ques
     # Check if user is asking about vendor context (performance, sourcing events, etc.)
     # Only check if not a file analysis query
     context_query_handled = False
-    #if not is_file_analysis_query:
-        # Get recent vendor IDs from last search results for context
-    #    recent_vendor_ids = []
 
-        # Detect if this is a vendor context query
-    #    context_detection = detect_context_query(translated_text, recent_vendor_ids)
-            
-    #    if context_detection.get('is_context_query') and context_detection.get('vendor_identifier'):
-    #        vendor_identifier = context_detection['vendor_identifier']
-    #        context_type = context_detection.get('context_type', 'general')
-    #        query_intent = context_detection.get('query_intent', user_text)
-                
-            # Find vendor by ID, name, or "this vendor"/"that vendor"
-    #        from src.vendor_context_query import find_vendor_by_identifier
-    #        vendor_found = find_vendor_by_identifier(vendor_identifier, profiles, recent_vendor_ids)
-                
-    #        if vendor_found:
-                # Generate context answer (optionally with external enrichment)
-    #            enrichment = None
-    #            if EXTERNAL_ENRICHMENT_ENABLED and is_enrichment_enabled():
-    #                try:
-    #                    v_row = profiles[profiles["vendor_id"] == vendor_found].iloc[0]
-    #                    vendor_profile = {
-    #                        "vendor_id": vendor_found,
-    #                        "vendor_name": v_row.get("vendor_name", ""),
-    #                        "country": v_row.get("country", ""),
-    #                        "city": v_row.get("city", ""),
-    #                        "industry": v_row.get("industry", ""),
-    #                    }
-    #                    enrichment = build_enrichment_profile(vendor_profile)
-    #                except Exception:
-    #                    enrichment = None
-
-    #            with st.spinner(f"Analyzing vendor context for {vendor_found}..."):
-    #                context_answer = answer_context_query(
-    #                    vendor_found,
-    #                    context_type,
-    #                    query_intent,
-    #                    profiles,
-    #                    txns,
-    #                    attachments,
-    #                    enrichment=enrichment,
-    #                )
-    #                
-    #            # Display the context answer
-    #            st.session_state.messages.append({
-    #                "role": "assistant",
-    #                "content": context_answer
-    #            })
-    #            context_query_handled = True
-    #            st.rerun()
     # ------------------------------------------------------------------
     # 🤖 AI-DRIVEN SEARCH EXECUTION (REPLACES OLD PARSE LOGIC)
     # ------------------------------------------------------------------
@@ -750,7 +578,6 @@ Please provide a clear, comprehensive answer about the file content. If the ques
             filters = plan.get("filters", {})
             limit = min(plan.get("limit", 10), 20)
 
-            # Run hybrid search
             results, filter_warning, show_only_top = search(
                 index,
                 bm25,
@@ -764,15 +591,12 @@ Please provide a clear, comprehensive answer about the file content. If the ques
                 top_k=limit
             )
 
-            # Apply sidebar sorting
             sort_key = SORT_OPTIONS.get(sort_by, "relevance")
             results = sort_results(results, sort_key)
 
-            # Save state
             st.session_state.last_results = results
             st.session_state.last_query = plan
 
-            # 🤖 Generate AI explanation
             ai_reply = generate_response(
                 translated_text,
                 results=results
@@ -791,118 +615,9 @@ Please provide a clear, comprehensive answer about the file content. If the ques
 
             st.rerun()
 
-        # 🧾 Fallback
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": "I couldn’t interpret that request clearly. Could you rephrase it?"
-        })
-
-        st.rerun()
-
-    if not is_file_analysis_query and not context_query_handled:
-        # q = parse_query("", translated_text, ui_filters, file_context=file_context)
-        # results, filter_warning, show_only_top = run_search_from_query(q)
-        st.session_state.last_filter_hash = current_filter_hash
-        if show_only_top:
-            st.markdown("_High-confidence match found — showing top results only._")
-
-        lines = []
-
-        if q.get("needs_clarification"):
-            lines.append(f"Before I search deeply: **{q.get('clarifying_question','What constraints should I use?')}**")
-            lines.append("_Meanwhile, here are the best-guess matches:_")
-
-        if filter_warning:
-            lines.append("⚠️ No vendors matched **all** requested constraints. Showing closest matches (some may be near-misses).")
-
-        if show_only_top:
-            lines.append("_High-confidence match found — showing top results only._")
-            
-        if q.get("logic_operators"):
-            logic_info = []
-            for key, op in q["logic_operators"].items():
-                if op:
-                    logic_info.append(f"{key}: {op}")
-            if logic_info:
-                lines.append(f"_Interpreted logic: {', '.join(logic_info)}_")
-
-        if not results:
-            lines.append("No **strong** matches found under current constraints. Try loosening filters (location/certifications) or add more capability keywords (e.g., SOC, SIEM, OT, audit).")
         else:
-            total_results = len(results)
-            total_pages = (total_results + RESULTS_PER_PAGE - 1) // RESULTS_PER_PAGE
-            current_page = st.session_state.results_page
-                
-            if total_pages > 1:
-                lines.append(f"_Showing page {current_page + 1} of {total_pages} ({total_results} total results)_")
-                start_idx = current_page * RESULTS_PER_PAGE
-                end_idx = min(start_idx + RESULTS_PER_PAGE, total_results)
-                paginated_results = results[start_idx:end_idx]
-            else:
-                paginated_results = results
-                
-            if paginated_results:
-                exact_paginated = [r for r in paginated_results if r.get("is_exact_match")]
-                near_paginated = [r for r in paginated_results if not r.get("is_exact_match")]
-                    
-                if exact_paginated:
-                    lines.append("**Exact / strong matches:**")
-                    for r in exact_paginated:
-                        score_info = f"score `{r['final_score']}`"
-                        if r.get('compliance_score') is not None:
-                            score_info += f" | Compliance: {r['compliance_score']} | Risk: {r['risk_score']} | Performance: {r['performance_score']}"
-                        lines.append(
-                            f"- **{r['vendor_name']}** (ID: `{r['vendor_id']}`) — {score_info}  \n"
-                            f"  {r['industry']} | {r['location']}  \n"
-                            f"  Certs: {r['certifications']}"
-                        )
-                        if r.get('ranking_reasons'):
-                            reasons_text = " • ".join(r['ranking_reasons'])
-                            lines.append(f"  _Ranked high because: {reasons_text}_")
-                        if r.get('matched_attachments'):
-                            att_text = ", ".join(r['matched_attachments'])
-                            lines.append(f"  📎 _Matched attachments: {att_text}_")
-
-                if near_paginated:
-                    lines.append("")
-                    lines.append("**Near matches (don't meet all constraints):**")
-                    for r in near_paginated:
-                        score_info = f"score `{r['final_score']}`"
-                        if r.get('compliance_score') is not None:
-                            score_info += f" | Compliance: {r['compliance_score']} | Risk: {r['risk_score']} | Performance: {r['performance_score']}"
-                        lines.append(
-                            f"- **{r['vendor_name']}** (ID: `{r['vendor_id']}`) — {score_info}  \n"
-                            f"  {r['industry']} | {r['location']}  \n"
-                            f"  Certs: {r['certifications']}"
-                        )
-                        if r.get('ranking_reasons'):
-                            reasons_text = " • ".join(r['ranking_reasons'])
-                            lines.append(f"  _Ranked high because: {reasons_text}_")
-                        if r.get('matched_attachments'):
-                            att_text = ", ".join(r['matched_attachments'])
-                            lines.append(f"  📎 _Matched attachments: {att_text}_")
-                            
-                        lines.append(f"  [View Context](#vendor_{r['vendor_id']})")
-                            
-                        result_key = f"result_{r['vendor_id']}"
-                        if result_key not in st.session_state:
-                            st.session_state[result_key] = r
-
-        msg = "\n".join(lines)
-
-        if st.session_state.get("_last_handled_query") == user_text:
-            st.stop()
-
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": msg,
-            "table": {
-                "results": results,
-                "query_json": q
-            }
-        })
-
-        st.session_state["_last_handled_query"] = user_text
-
-        st.rerun()
-
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "I couldn’t interpret that request clearly. Could you rephrase it?"
+            })
+            st.rerun()
