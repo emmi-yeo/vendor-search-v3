@@ -74,7 +74,8 @@ SORT_OPTIONS = {
     "Performance Score": "performance",
     "Total Spend": "spend"
 }
-
+DEFAULT_SORT = "Relevance (default)"
+sort_by = DEFAULT_SORT
 # ---- Sidebar filters (dynamic) ----
 # st.sidebar.header("Filters")
 
@@ -366,24 +367,28 @@ if "pending_query" in st.session_state and st.session_state.pending_query:
     del st.session_state.pending_query
 
 ALLOWED_FILE_TYPES = ["pdf", "docx", "xlsx", "xls", "png", "jpg", "jpeg"]
-ALLOWED_EXTENSIONS = ["." + ext for ext in ALLOWED_FILE_TYPES]
+ALLOWED_EXTENSIONS = {f".{ext}" for ext in ALLOWED_FILE_TYPES}
 MAX_UPLOAD_SIZE_MB = 10
 
 def validate_uploaded_file(uploaded_file):
-    # Extension validation
-    filename = uploaded_file.name
+    filename = uploaded_file.name.lower()
+
+    # 1️⃣ Extension validation
     _, ext = os.path.splitext(filename)
-    ext = ext.lower()
+
+    if not ext:
+        return False, "File has no extension."
 
     if ext not in ALLOWED_EXTENSIONS:
-        return False, f"Unsupported file type: {ext}. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+        return False, f"Unsupported file type: {ext}. Allowed types: {', '.join(ALLOWED_FILE_TYPES)}"
 
-    # Size validation
+    # 2️⃣ Size validation
     file_size_mb = uploaded_file.size / (1024 * 1024)
+
     if file_size_mb > MAX_UPLOAD_SIZE_MB:
         return False, f"File too large ({file_size_mb:.2f}MB). Maximum allowed size is {MAX_UPLOAD_SIZE_MB}MB."
 
-    # Empty file validation
+    # 3️⃣ Empty file validation
     if uploaded_file.size == 0:
         return False, "Uploaded file is empty."
 
@@ -436,7 +441,7 @@ if user_input or pending_query:
                 validated_files.append(file)
 
         # If all files invalid → stop
-        if not validated_files:
+        if uploaded_files and not validated_files:
             st.stop()
 
         # Only process validated files
@@ -464,11 +469,11 @@ if user_input or pending_query:
                 st.info("Processed files: " + " | ".join(file_summary))
         
     # Process text input (or file-only input)
-    if user_text or uploaded_files:
+    if user_text or validated_files:
         # Add user message to session state (will be rendered in the loop above on rerun)
         message_content = user_text
-        if uploaded_files:
-            file_info = " | Files: " + ", ".join([f.name for f in uploaded_files])
+        if validated_files:
+            file_info = " | Files: " + ", ".join([f.name for f in validated_files])
             message_content += file_info
         st.session_state.messages.append({"role": "user", "content": message_content})
         
