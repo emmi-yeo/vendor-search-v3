@@ -76,35 +76,35 @@ SORT_OPTIONS = {
 }
 
 # ---- Sidebar filters (dynamic) ----
-st.sidebar.header("Filters")
+# st.sidebar.header("Filters")
 
 # Sort option
-sort_by = st.sidebar.selectbox("Sort by", list(SORT_OPTIONS.keys()), index=0)
+# sort_by = st.sidebar.selectbox("Sort by", list(SORT_OPTIONS.keys()), index=0)
 
-all_industries = sorted({str(x) for x in profiles["industry"].dropna().unique()})
-all_countries = sorted({str(x) for x in profiles["country"].dropna().unique()})
-all_states = sorted({str(x) for x in profiles["state"].dropna().unique()})
-all_cities = sorted({str(x) for x in profiles["city"].dropna().unique()})
+# all_industries = sorted({str(x) for x in profiles["industry"].dropna().unique()})
+# all_countries = sorted({str(x) for x in profiles["country"].dropna().unique()})
+# all_states = sorted({str(x) for x in profiles["state"].dropna().unique()})
+# all_cities = sorted({str(x) for x in profiles["city"].dropna().unique()})
 
-industry = st.sidebar.multiselect("Industry", all_industries)
-country = st.sidebar.selectbox("Country", [""] + all_countries)
-state = st.sidebar.multiselect("State", all_states)
-city = st.sidebar.multiselect("City", all_cities)
+# industry = st.sidebar.multiselect("Industry", all_industries)
+# country = st.sidebar.selectbox("Country", [""] + all_countries)
+# state = st.sidebar.multiselect("State", all_states)
+# city = st.sidebar.multiselect("City", all_cities)
 
 # certifications could be multi-value; for POC, let user type or choose from extracted tokens
-cert_input = st.sidebar.text_input("Certifications (comma separated)", value="")
+# cert_input = st.sidebar.text_input("Certifications (comma separated)", value="")
 
-ui_filters = {
-    "industry": industry,
-    "country": country,
-    "state": state,
-    "city": city,
-    "certifications": [c.strip() for c in cert_input.split(",") if c.strip()]
-}
+# ui_filters = {
+#     "industry": industry,
+#     "country": country,
+#     "state": state,
+#     "city": city,
+#     "certifications": [c.strip() for c in cert_input.split(",") if c.strip()]
+# }
 
-current_filter_hash = hash_filters(ui_filters)
-if "last_filter_hash" not in st.session_state:
-    st.session_state.last_filter_hash = current_filter_hash
+# current_filter_hash = hash_filters(ui_filters)
+# if "last_filter_hash" not in st.session_state:
+#     st.session_state.last_filter_hash = current_filter_hash
 
 # ---- Chat state ----
 if "messages" not in st.session_state:
@@ -364,14 +364,37 @@ if "pending_query" in st.session_state and st.session_state.pending_query:
     pending_query = st.session_state.pending_query
     # Clear it after reading
     del st.session_state.pending_query
-    
+
+ALLOWED_FILE_TYPES = ["pdf", "docx", "xlsx", "xls", "png", "jpg", "jpeg"]
+MAX_UPLOAD_SIZE_MB = 10
+
+def validate_uploaded_file(uploaded_file):
+    # Extension validation
+    filename = uploaded_file.name
+    _, ext = os.path.splitext(filename)
+    ext = ext.lower()
+
+    if ext not in ALLOWED_EXTENSIONS:
+        return False, f"Unsupported file type: {ext}. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+
+    # Size validation
+    file_size_mb = uploaded_file.size / (1024 * 1024)
+    if file_size_mb > MAX_FILE_SIZE_MB:
+        return False, f"File too large ({file_size_mb:.2f}MB). Maximum allowed size is {MAX_FILE_SIZE_MB}MB."
+
+    # Empty file validation
+    if uploaded_file.size == 0:
+        return False, "Uploaded file is empty."
+
+    return True, "Valid"
+ 
 # New user input - always at the bottom
 user_input = st.chat_input(
     "Ask for vendors in natural language…",
     accept_file=True,
-    file_type=None,  # Accept all file types
-    max_upload_size=200  # 200 MB max
-)
+    file_type=ALLOWED_FILE_TYPES,  # restrict extensions at UI level
+    max_upload_size=MAX_UPLOAD_SIZE_MB
+)   
     
 # Handle user input (text and/or files) OR pending query from prompt button
 if user_input or pending_query:
@@ -399,17 +422,30 @@ if user_input or pending_query:
             user_text = str(user_input) if user_input else ""
             uploaded_files = []
         
-    # Handle uploaded files - extract text content
     file_contents = {}
+    validated_files = []
+
     if uploaded_files:
-        # Process files to extract text content
+        for file in uploaded_files:
+            is_valid, message = validate_uploaded_file(file)
+
+            if not is_valid:
+                st.error(message)
+            else:
+                validated_files.append(file)
+
+        # If all files invalid → stop
+        if not validated_files:
+            st.stop()
+
+        # Only process validated files
         with st.spinner("Processing uploaded files..."):
-            file_contents = process_uploaded_files(uploaded_files)
+            file_contents = process_uploaded_files(validated_files)
             
         # Store file info for processing
         if "uploaded_files" not in st.session_state:
             st.session_state.uploaded_files = []
-        for file in uploaded_files:
+        for file in validated_files:
             st.session_state.uploaded_files.append({
                 "name": file.name,
                 "size": file.size,
