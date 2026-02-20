@@ -374,13 +374,13 @@ def validate_uploaded_file(uploaded_file):
     _, ext = os.path.splitext(filename)
     ext = ext.lower()
 
-    if ext not in ALLOWED_EXTENSIONS:
-        return False, f"Unsupported file type: {ext}. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+    if ext not in ALLOWED_FILE_TYPES:
+        return False, f"Unsupported file type: {ext}. Allowed types: {', '.join(ALLOWED_FILE_TYPES)}"
 
     # Size validation
     file_size_mb = uploaded_file.size / (1024 * 1024)
-    if file_size_mb > MAX_FILE_SIZE_MB:
-        return False, f"File too large ({file_size_mb:.2f}MB). Maximum allowed size is {MAX_FILE_SIZE_MB}MB."
+    if file_size_mb > MAX_UPLOAD_SIZE_MB:
+        return False, f"File too large ({file_size_mb:.2f}MB). Maximum allowed size is {MAX_UPLOAD_SIZE_MB}MB."
 
     # Empty file validation
     if uploaded_file.size == 0:
