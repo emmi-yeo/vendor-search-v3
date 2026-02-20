@@ -366,6 +366,7 @@ if "pending_query" in st.session_state and st.session_state.pending_query:
     del st.session_state.pending_query
 
 ALLOWED_FILE_TYPES = ["pdf", "docx", "xlsx", "xls", "png", "jpg", "jpeg"]
+ALLOWED_EXTENSIONS = ["." + ext for ext in ALLOWED_FILE_TYPES]
 MAX_UPLOAD_SIZE_MB = 10
 
 def validate_uploaded_file(uploaded_file):
@@ -374,8 +375,8 @@ def validate_uploaded_file(uploaded_file):
     _, ext = os.path.splitext(filename)
     ext = ext.lower()
 
-    if ext not in ALLOWED_FILE_TYPES:
-        return False, f"Unsupported file type: {ext}. Allowed types: {', '.join(ALLOWED_FILE_TYPES)}"
+    if ext not in ALLOWED_EXTENSIONS:
+        return False, f"Unsupported file type: {ext}. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
 
     # Size validation
     file_size_mb = uploaded_file.size / (1024 * 1024)
