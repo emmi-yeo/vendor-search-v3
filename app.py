@@ -74,38 +74,37 @@ SORT_OPTIONS = {
     "Performance Score": "performance",
     "Total Spend": "spend"
 }
-DEFAULT_SORT = "Relevance (default)"
-sort_by = DEFAULT_SORT
+
 # ---- Sidebar filters (dynamic) ----
-# st.sidebar.header("Filters")
+st.sidebar.header("Filters")
 
 # Sort option
-# sort_by = st.sidebar.selectbox("Sort by", list(SORT_OPTIONS.keys()), index=0)
+sort_by = st.sidebar.selectbox("Sort by", list(SORT_OPTIONS.keys()), index=0)
 
-# all_industries = sorted({str(x) for x in profiles["industry"].dropna().unique()})
-# all_countries = sorted({str(x) for x in profiles["country"].dropna().unique()})
-# all_states = sorted({str(x) for x in profiles["state"].dropna().unique()})
-# all_cities = sorted({str(x) for x in profiles["city"].dropna().unique()})
+all_industries = sorted({str(x) for x in profiles["industry"].dropna().unique()})
+all_countries = sorted({str(x) for x in profiles["country"].dropna().unique()})
+all_states = sorted({str(x) for x in profiles["state"].dropna().unique()})
+all_cities = sorted({str(x) for x in profiles["city"].dropna().unique()})
 
-# industry = st.sidebar.multiselect("Industry", all_industries)
-# country = st.sidebar.selectbox("Country", [""] + all_countries)
-# state = st.sidebar.multiselect("State", all_states)
-# city = st.sidebar.multiselect("City", all_cities)
+industry = st.sidebar.multiselect("Industry", all_industries)
+country = st.sidebar.selectbox("Country", [""] + all_countries)
+state = st.sidebar.multiselect("State", all_states)
+city = st.sidebar.multiselect("City", all_cities)
 
-# certifications could be multi-value; for POC, let user type or choose from extracted tokens
-# cert_input = st.sidebar.text_input("Certifications (comma separated)", value="")
+certifications could be multi-value; for POC, let user type or choose from extracted tokens
+cert_input = st.sidebar.text_input("Certifications (comma separated)", value="")
 
-# ui_filters = {
-#     "industry": industry,
-#     "country": country,
-#     "state": state,
-#     "city": city,
-#     "certifications": [c.strip() for c in cert_input.split(",") if c.strip()]
-# }
+ui_filters = {
+    "industry": industry,
+    "country": country,
+    "state": state,
+    "city": city,
+    "certifications": [c.strip() for c in cert_input.split(",") if c.strip()]
+}
 
-# current_filter_hash = hash_filters(ui_filters)
-# if "last_filter_hash" not in st.session_state:
-#     st.session_state.last_filter_hash = current_filter_hash
+current_filter_hash = hash_filters(ui_filters)
+if "last_filter_hash" not in st.session_state:
+    st.session_state.last_filter_hash = current_filter_hash
 
 # ---- Chat state ----
 if "messages" not in st.session_state:
