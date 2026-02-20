@@ -429,6 +429,7 @@ if user_input or pending_query:
         
     file_contents = {}
     validated_files = []
+    file_upload_attempted = bool(uploaded_files)
 
     if uploaded_files:
         for file in uploaded_files:
@@ -439,9 +440,18 @@ if user_input or pending_query:
             else:
                 validated_files.append(file)
 
-        # If all files invalid → stop
-        if uploaded_files and not validated_files:
+        # 🚨 If user attempted upload but no valid files → STOP ENTIRE REQUEST
+        if file_upload_attempted and not validated_files:
+            st.warning("You attempted to upload files, but none were valid. Please fix the issues and try again.")
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "❌ File upload failed. Please fix the issue above before submitting your request."
+            })
             st.stop()
+
+        # Only process validated files
+        with st.spinner("Processing uploaded files..."):
+            file_contents = process_uploaded_files(validated_files)
 
         # Only process validated files
         with st.spinner("Processing uploaded files..."):
