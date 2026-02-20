@@ -91,7 +91,7 @@ country = st.sidebar.selectbox("Country", [""] + all_countries)
 state = st.sidebar.multiselect("State", all_states)
 city = st.sidebar.multiselect("City", all_cities)
 
-certifications could be multi-value; for POC, let user type or choose from extracted tokens
+# certifications could be multi-value; for POC, let user type or choose from extracted tokens
 cert_input = st.sidebar.text_input("Certifications (comma separated)", value="")
 
 ui_filters = {
