@@ -624,7 +624,7 @@ if user_input or pending_query:
                 "- 📄 Checking a vendor's certifications or profile\n"
                 "- 📊 Reviewing spend, performance, and compliance\n\n"
                 "Try something like:\n"
-                "_"Cybersecurity vendors in Malaysia with ISO27001"_"
+                "_Software vendors in Malaysia with ISO27001_"
             )
         })
         st.rerun()
