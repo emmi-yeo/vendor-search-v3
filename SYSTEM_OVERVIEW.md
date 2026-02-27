@@ -543,7 +543,7 @@ AI-powered hybrid search combining:
 **Mature Features (Production-Ready):**
 - ✅ Basic vendor search by text query
 - ✅ Filter by industry, location, certifications
-- ✅ File upload and processing
+   - ✅ File upload and processing (PDF/DOCX/XLSX/XLS/PNG/JPG, LLM-driven interpretation)
 - ✅ Export to CSV/Excel/PDF
 - ✅ Multi-language query support
 

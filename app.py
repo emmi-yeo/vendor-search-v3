@@ -25,6 +25,16 @@ from src.ai_responder import generate_response
 from src.aggregation import aggregate_vendors
 from src.azure_sql_loader import load_vendor_tables
 
+# file upload helpers (new feature)
+from src.file_handler import (
+    ALLOWED_EXTENSIONS,
+    MAX_FILE_SIZE,
+    validate_file,
+    extract_text_from_file,
+    interpret_files,
+    handle_uploaded_files,
+)
+
 def is_malicious_sql_input(text: str) -> bool:
     dangerous_patterns = [
         r"drop\s+table",
@@ -406,6 +416,45 @@ def llm_prompt_quality_check(text: str):
         # fallback safe behavior
         return "valid", ""
 
+
+# ---- file upload support ----
+uploaded_files = st.file_uploader(
+    "Upload document(s) (PDF/DOCX/XLSX/XLS/PNG/JPG, max 100 MB each)",
+    type=list(ALLOWED_EXTENSIONS),
+    accept_multiple_files=True,
+)
+
+# when the widget returns a list, perform quick validation and stash the batch
+if uploaded_files:
+    # check against size/extension rules immediately so user sees errors
+    errors = []
+    for f in uploaded_files:
+        try:
+            validate_file(f)
+        except ValueError as ve:
+            errors.append(str(ve))
+    if errors:
+        for err in errors:
+            st.error(err)
+        # drop the invalid selection so the user can try again
+        st.session_state.pop("uploaded_files", None)
+        st.session_state.file_processed = True
+        uploaded_files = []
+    else:
+        # new batch; mark unprocessed
+        if st.session_state.get("file_processed", True):
+            st.session_state.uploaded_files = uploaded_files
+            st.session_state.file_processed = False
+
+# show list of currently stored uploads with clear button
+if st.session_state.get("uploaded_files"):
+    names = [f.name for f in st.session_state.uploaded_files]
+    st.markdown(f"**Uploaded:** {', '.join(names)}")
+    if st.button("Clear uploads", key="clear_uploads"):
+        st.session_state.pop("uploaded_files", None)
+        st.session_state.file_processed = True
+        st.experimental_rerun()
+
 # New user input - always at the bottom
 user_input = st.chat_input("Ask for vendors in natural language…")   
     
@@ -419,6 +468,46 @@ if user_input or pending_query:
         "role": "user",
         "content": user_text
     })
+
+    # ---- process uploaded files if any ----
+    if st.session_state.get("uploaded_files") and not st.session_state.get("file_processed", False):
+        try:
+            file_result = handle_uploaded_files(
+                st.session_state.uploaded_files,
+                user_text if user_text else None,
+            )
+        except ValueError as ve:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"⚠️ {ve}"
+            })
+            st.session_state.file_processed = True
+            st.session_state.pop("uploaded_files", None)
+            st.rerun()
+
+        # mark as done and clear batch
+        st.session_state.file_processed = True
+        st.session_state.pop("uploaded_files", None)
+
+        if file_result.get("action") == "search":
+            query_json = {"search_text": file_result.get("search_query", ""), "filters": {}}
+            results, filter_warning, show_only_top = run_search_from_query(query_json)
+            ai_reply = generate_response(file_result.get("search_query", ""))
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": ai_reply,
+                "table": {
+                    "results": results,
+                    "query_json": {"render_id": str(uuid.uuid4())},
+                }
+            })
+            st.rerun()
+        else:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": file_result.get("text", "")
+            })
+            st.rerun()
 
     # 🔐 SQL Injection Guard
     if is_malicious_sql_input(user_text):
