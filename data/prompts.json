@@ -1,0 +1,26 @@
+{
+  "categories": {
+    "vendor_updates": [
+      "Show vendor updates",
+      "List recently updated vendors",
+      "Vendors updated in the last month"
+    ],
+    "financial_stability": [
+      "Show vendor financial stability",
+      "Show vendor shareholders",
+      "Vendors with high transaction volume",
+      "Top vendors by spend"
+    ],
+    "reputation": [
+      "Show vendor reputation & references",
+      "Vendors with good performance scores",
+      "Highly rated vendors"
+    ],
+    "compliance": [
+      "ISO-certified vendors",
+      "Vendors with compliance certifications",
+      "Vendors flagged for missing certifications"
+    ]
+  }
+}
+

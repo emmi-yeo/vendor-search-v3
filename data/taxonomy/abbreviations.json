@@ -1,0 +1,218 @@
+{
+  "BM": {
+    "full_forms": ["business management", "business manager", "business management system"],
+    "synonyms": ["bm", "business mgmt"],
+    "domain": "business",
+    "expansion_priority": "high"
+  },
+  "ERP": {
+    "full_forms": ["enterprise resource planning", "erp system"],
+    "synonyms": ["erp", "enterprise resource planner"],
+    "domain": "business",
+    "expansion_priority": "high"
+  },
+  "HRIS": {
+    "full_forms": ["human resources information system", "hr information system"],
+    "synonyms": ["hris", "hrms"],
+    "domain": "hr",
+    "expansion_priority": "high"
+  },
+  "SOC": {
+    "full_forms": ["security operations center", "security operations centre"],
+    "synonyms": ["soc", "security operations", "security response"],
+    "domain": "cybersecurity",
+    "expansion_priority": "high"
+  },
+  "SIEM": {
+    "full_forms": ["security information and event management"],
+    "synonyms": ["siem", "security monitoring", "event monitoring"],
+    "domain": "cybersecurity",
+    "expansion_priority": "high"
+  },
+  "OT": {
+    "full_forms": ["operational technology", "ot security"],
+    "synonyms": ["ot", "operational", "ot systems"],
+    "domain": "cybersecurity",
+    "expansion_priority": "medium"
+  },
+  "IT": {
+    "full_forms": ["information technology", "it services"],
+    "synonyms": ["it", "tech", "technology"],
+    "domain": "business",
+    "expansion_priority": "medium"
+  },
+  "CRM": {
+    "full_forms": ["customer relationship management", "crm system"],
+    "synonyms": ["crm", "customer management"],
+    "domain": "business",
+    "expansion_priority": "high"
+  },
+  "HR": {
+    "full_forms": ["human resources", "human resources department"],
+    "synonyms": ["hr", "human resources"],
+    "domain": "hr",
+    "expansion_priority": "medium"
+  },
+  "PII": {
+    "full_forms": ["personally identifiable information"],
+    "synonyms": ["pii", "personal data"],
+    "domain": "security",
+    "expansion_priority": "medium"
+  },
+  "GDPR": {
+    "full_forms": ["general data protection regulation"],
+    "synonyms": ["gdpr", "data protection"],
+    "domain": "compliance",
+    "expansion_priority": "high"
+  },
+  "PDPA": {
+    "full_forms": ["personal data protection act"],
+    "synonyms": ["pdpa", "data protection law"],
+    "domain": "compliance",
+    "expansion_priority": "high"
+  },
+  "AML": {
+    "full_forms": ["anti-money laundering"],
+    "synonyms": ["aml", "anti money laundering"],
+    "domain": "compliance",
+    "expansion_priority": "high"
+  },
+  "KYC": {
+    "full_forms": ["know your customer"],
+    "synonyms": ["kyc", "customer verification"],
+    "domain": "compliance",
+    "expansion_priority": "high"
+  },
+  "RFP": {
+    "full_forms": ["request for proposal"],
+    "synonyms": ["rfp", "proposal request"],
+    "domain": "procurement",
+    "expansion_priority": "high"
+  },
+  "RFQ": {
+    "full_forms": ["request for quotation"],
+    "synonyms": ["rfq", "quote request"],
+    "domain": "procurement",
+    "expansion_priority": "high"
+  },
+  "SLA": {
+    "full_forms": ["service level agreement"],
+    "synonyms": ["sla", "service agreement"],
+    "domain": "business",
+    "expansion_priority": "high"
+  },
+  "API": {
+    "full_forms": ["application programming interface"],
+    "synonyms": ["api", "application interface"],
+    "domain": "technology",
+    "expansion_priority": "medium"
+  },
+  "EDI": {
+    "full_forms": ["electronic data interchange"],
+    "synonyms": ["edi", "data interchange"],
+    "domain": "technology",
+    "expansion_priority": "medium"
+  },
+  "VPN": {
+    "full_forms": ["virtual private network"],
+    "synonyms": ["vpn", "private network"],
+    "domain": "cybersecurity",
+    "expansion_priority": "medium"
+  },
+  "MFA": {
+    "full_forms": ["multi-factor authentication"],
+    "synonyms": ["mfa", "2fa", "two-factor authentication"],
+    "domain": "cybersecurity",
+    "expansion_priority": "high"
+  },
+  "QA": {
+    "full_forms": ["quality assurance"],
+    "synonyms": ["qa", "quality control"],
+    "domain": "business",
+    "expansion_priority": "medium"
+  },
+  "UAT": {
+    "full_forms": ["user acceptance testing"],
+    "synonyms": ["uat", "user testing"],
+    "domain": "business",
+    "expansion_priority": "high"
+  },
+  "ROI": {
+    "full_forms": ["return on investment"],
+    "synonyms": ["roi", "investment return"],
+    "domain": "business",
+    "expansion_priority": "medium"
+  },
+  "TCO": {
+    "full_forms": ["total cost of ownership"],
+    "synonyms": ["tco", "total cost"],
+    "domain": "business",
+    "expansion_priority": "medium"
+  },
+  "PoC": {
+    "full_forms": ["proof of concept"],
+    "synonyms": ["poc", "prototype", "pilot"],
+    "domain": "business",
+    "expansion_priority": "high"
+  },
+  "MVP": {
+    "full_forms": ["minimum viable product"],
+    "synonyms": ["mvp", "minimal product"],
+    "domain": "business",
+    "expansion_priority": "high"
+  },
+  "DLP": {
+    "full_forms": ["data loss prevention"],
+    "synonyms": ["dlp", "data protection"],
+    "domain": "cybersecurity",
+    "expansion_priority": "high"
+  },
+  "PAM": {
+    "full_forms": ["privileged access management"],
+    "synonyms": ["pam", "access management"],
+    "domain": "cybersecurity",
+    "expansion_priority": "high"
+  },
+  "IAM": {
+    "full_forms": ["identity and access management"],
+    "synonyms": ["iam", "access control"],
+    "domain": "cybersecurity",
+    "expansion_priority": "high"
+  },
+  "SSO": {
+    "full_forms": ["single sign-on"],
+    "synonyms": ["sso", "single sign on"],
+    "domain": "cybersecurity",
+    "expansion_priority": "medium"
+  },
+  "MSP": {
+    "full_forms": ["managed service provider"],
+    "synonyms": ["msp", "managed services"],
+    "domain": "business",
+    "expansion_priority": "high"
+  },
+  "MTTR": {
+    "full_forms": ["mean time to repair"],
+    "synonyms": ["mttr", "response time"],
+    "domain": "business",
+    "expansion_priority": "medium"
+  },
+  "SaaS": {
+    "full_forms": ["software as a service"],
+    "synonyms": ["saas", "cloud software"],
+    "domain": "technology",
+    "expansion_priority": "high"
+  },
+  "PaaS": {
+    "full_forms": ["platform as a service"],
+    "synonyms": ["paas", "cloud platform"],
+    "domain": "technology",
+    "expansion_priority": "medium"
+  },
+  "IaaS": {
+    "full_forms": ["infrastructure as a service"],
+    "synonyms": ["iaas", "cloud infrastructure"],
+    "domain": "technology",
+    "expansion_priority": "medium"
+  }
+}

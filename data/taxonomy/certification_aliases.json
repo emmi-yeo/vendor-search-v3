@@ -1,0 +1,115 @@
+{
+  "certifications": {
+    "ISO27001": {
+      "primary": "ISO27001",
+      "formats": ["ISO27001", "ISO-27001", "ISO/IEC 27001", "ISO27k", "ISO 27001", "ISO 27-001"],
+      "synonyms": ["information security", "information security management", "ism"],
+      "domain": "cybersecurity",
+      "standards_body": "ISO"
+    },
+    "ISO9001": {
+      "primary": "ISO9001",
+      "formats": ["ISO9001", "ISO-9001", "ISO/IEC 9001", "ISO 9001", "ISO 9-001"],
+      "synonyms": ["quality management", "quality assurance", "qa"],
+      "domain": "quality",
+      "standards_body": "ISO"
+    },
+    "SOC2": {
+      "primary": "SOC2",
+      "formats": ["SOC2", "SOC 2", "SOC II", "SOC 2 Type I", "SOC 2 Type II"],
+      "synonyms": ["service organization", "audit report"],
+      "domain": "cybersecurity",
+      "standards_body": "AICPA"
+    },
+    "SOC2 Type I": {
+      "primary": "SOC2 Type I",
+      "formats": ["SOC 2 Type I", "SOC2 Type I", "SOC II Type I"],
+      "synonyms": ["security effectiveness"],
+      "domain": "cybersecurity",
+      "standards_body": "AICPA"
+    },
+    "SOC2 Type II": {
+      "primary": "SOC2 Type II",
+      "formats": ["SOC 2 Type II", "SOC2 Type II", "SOC II Type II"],
+      "synonyms": ["security operational effectiveness"],
+      "domain": "cybersecurity",
+      "standards_body": "AICPA"
+    },
+    "GDPR": {
+      "primary": "GDPR",
+      "formats": ["GDPR", "GDPR compliant", "General Data Protection Regulation"],
+      "synonyms": ["data protection", "privacy"],
+      "domain": "compliance",
+      "standards_body": "EU"
+    },
+    "PDPA": {
+      "primary": "PDPA",
+      "formats": ["PDPA", "PDPA compliant", "Personal Data Protection Act"],
+      "synonyms": ["personal data", "data protection"],
+      "domain": "compliance",
+      "standards_body": "Malaysia"
+    },
+    "HIPAA": {
+      "primary": "HIPAA",
+      "formats": ["HIPAA", "HIPAA compliant", "Health Insurance Portability and Accountability Act"],
+      "synonyms": ["healthcare", "health data"],
+      "domain": "compliance",
+      "standards_body": "USA"
+    },
+    "PCI-DSS": {
+      "primary": "PCI-DSS",
+      "formats": ["PCI-DSS", "PCI DSS", "PCI-DSS 3.2", "PCI-DSS 4.0"],
+      "synonyms": ["payment card", "card payment", "payment security"],
+      "domain": "compliance",
+      "standards_body": "PCI Security Standards Council"
+    },
+    "NIST": {
+      "primary": "NIST",
+      "formats": ["NIST", "NIST CSF", "NIST Cybersecurity Framework"],
+      "synonyms": ["cybersecurity framework", "security framework"],
+      "domain": "cybersecurity",
+      "standards_body": "USA"
+    },
+    "COBIT": {
+      "primary": "COBIT",
+      "formats": ["COBIT", "COBIT 5", "COBIT 2019"],
+      "synonyms": ["governance", "it governance"],
+      "domain": "governance",
+      "standards_body": "ISACA"
+    },
+    "ITIL": {
+      "primary": "ITIL",
+      "formats": ["ITIL", "ITIL v3", "ITIL v4", "ITIL 4"],
+      "synonyms": ["it service", "service management"],
+      "domain": "it",
+      "standards_body": "AXELOS"
+    },
+    "Six Sigma": {
+      "primary": "Six Sigma",
+      "formats": ["Six Sigma", "6 Sigma", "Six-Sigma", "Black Belt", "Green Belt"],
+      "synonyms": ["quality", "process improvement"],
+      "domain": "quality",
+      "standards_body": "Industry Standard"
+    },
+    "PMP": {
+      "primary": "PMP",
+      "formats": ["PMP", "Project Management Professional"],
+      "synonyms": ["project management", "project"],
+      "domain": "business",
+      "standards_body": "PMI"
+    },
+    "CISSP": {
+      "primary": "CISSP",
+      "formats": ["CISSP", "Certified Information Systems Security Professional"],
+      "synonyms": ["security", "information security"],
+      "domain": "cybersecurity",
+      "standards_body": "ISC2"
+    }
+  },
+  "matching_rules": {
+    "exact_match_required": false,
+    "min_fuzzy_threshold": 0.80,
+    "phonetic_similarity": 0.75,
+    "format_variations_must_match": true
+  }
+}

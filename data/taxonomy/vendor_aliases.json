@@ -1,0 +1,36 @@
+{
+  "_comment": "Vendor name aliases and known variations. Maps vendor_id to list of known names/aliases.",
+  "aliases": {
+    "V001": {
+      "primary": "SecureNet Asia",
+      "aliases": ["SecureNet", "Secure Net", "SecureNet MY", "Secure Net Asia"],
+      "also_known_as": [],
+      "abbreviations": []
+    },
+    "V002": {
+      "primary": "CloudTech Solutions",
+      "aliases": ["Cloud Tech", "CloudTech", "CloudTech Malaysia"],
+      "also_known_as": [],
+      "abbreviations": ["CTS"]
+    },
+    "V003": {
+      "primary": "DataGuard International",
+      "aliases": ["DataGuard", "Data Guard", "DataGuard Int'l"],
+      "also_known_as": [],
+      "abbreviations": ["DGI"]
+    },
+    "V004": {
+      "primary": "TechConsult Pro",
+      "aliases": ["TechConsult", "Tech Consult", "TCP"],
+      "also_known_as": ["TechConsulting Pro"],
+      "abbreviations": ["TCP"]
+    },
+    "V005": {
+      "primary": "Enterprise Solutions Group",
+      "aliases": ["Enterprise Solutions", "ESG", "Enterprise Group"],
+      "also_known_as": [],
+      "abbreviations": ["ESG"]
+    }
+  },
+  "notes": "Add new vendors to this file as they are discovered. Helps with typo recovery and alias matching."
+}

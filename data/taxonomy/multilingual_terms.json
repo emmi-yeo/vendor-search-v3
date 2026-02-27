@@ -1,0 +1,102 @@
+{
+  "keamanan siber": {
+    "english": "cybersecurity",
+    "variants": ["cyber security", "security"],
+    "domain": "cybersecurity"
+  },
+  "manajemen risiko": {
+    "english": "risk management",
+    "variants": ["risk", "risk assessment"],
+    "domain": "compliance"
+  },
+  "perlindungan data": {
+    "english": "data protection",
+    "variants": ["data security", "data privacy"],
+    "domain": "compliance"
+  },
+  "sistem informasi": {
+    "english": "information systems",
+    "variants": ["it systems", "systems"],
+    "domain": "technology"
+  },
+  "layanan konsultasi": {
+    "english": "consulting services",
+    "variants": ["consultation", "advisory services"],
+    "domain": "business"
+  },
+  "integrasi sistem": {
+    "english": "system integration",
+    "variants": ["integration", "systems integration"],
+    "domain": "technology"
+  },
+  "infrastruktur it": {
+    "english": "it infrastructure",
+    "variants": ["infrastructure", "it systems"],
+    "domain": "technology"
+  },
+  "audit keamanan": {
+    "english": "security audit",
+    "variants": ["security assessment", "audit"],
+    "domain": "compliance"
+  },
+  "manajemen kepatuhan": {
+    "english": "compliance management",
+    "variants": ["compliance", "regulatory"],
+    "domain": "compliance"
+  },
+  "pemulihan bencana": {
+    "english": "disaster recovery",
+    "variants": ["recovery", "business continuity"],
+    "domain": "it"
+  },
+  "layanan kelola": {
+    "english": "managed services",
+    "variants": ["managed service provider", "msp"],
+    "domain": "it"
+  },
+  "pemantauan 24/7": {
+    "english": "24/7 monitoring",
+    "variants": ["monitoring", "round-the-clock"],
+    "domain": "it"
+  },
+  "transformasi digital": {
+    "english": "digital transformation",
+    "variants": ["digitalization", "digital"],
+    "domain": "business"
+  },
+  "solusi cloud": {
+    "english": "cloud solutions",
+    "variants": ["cloud", "cloud services"],
+    "domain": "technology"
+  },
+  "pengujian keamanan": {
+    "english": "security testing",
+    "variants": ["penetration testing", "pen testing"],
+    "domain": "cybersecurity"
+  },
+  "sertifikasi iso": {
+    "english": "iso certification",
+    "variants": ["iso certified", "iso compliance"],
+    "domain": "compliance"
+  },
+  "manajemen vendor": {
+    "english": "vendor management",
+    "variants": ["supplier management", "sourcing"],
+    "domain": "procurement"
+  },
+  "kontrol akses": {
+    "english": "access control",
+    "variants": ["access management", "iam"],
+    "domain": "cybersecurity"
+  },
+  "enkripsi data": {
+    "english": "data encryption",
+    "variants": ["encryption", "data security"],
+    "domain": "cybersecurity"
+  },
+  "cadangan data": {
+    "english": "data backup",
+    "variants": ["backup", "restore"],
+    "domain": "it"
+  }
+}

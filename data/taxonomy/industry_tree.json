@@ -1,0 +1,82 @@
+{
+  "industries": {
+    "Information Technology": {
+      "synonyms": ["IT", "tech", "technology", "IT services", "it services", "software", "technology services"],
+      "parent": null,
+      "related": ["Software Development", "IT Consulting", "Infrastructure"],
+      "description": "IT and technology services"
+    },
+    "Cybersecurity": {
+      "synonyms": ["cyber security", "cybersec", "security", "information security", "infosec", "cyber", "security services"],
+      "parent": "Information Technology",
+      "related": ["Compliance", "Risk Management"],
+      "description": "Security and cybersecurity services"
+    },
+    "Software Development": {
+      "synonyms": ["software", "development", "app development", "application development", "programming", "software engineering"],
+      "parent": "Information Technology",
+      "related": ["IT Consulting", "Information Technology"],
+      "description": "Custom software development services"
+    },
+    "Cloud Services": {
+      "synonyms": ["cloud", "cloud computing", "cloud infrastructure", "cloud solutions", "saas", "paas", "iaas"],
+      "parent": "Information Technology",
+      "related": ["Infrastructure", "Information Technology"],
+      "description": "Cloud computing and SaaS solutions"
+    },
+    "IT Consulting": {
+      "synonyms": ["consulting", "consultant", "it consultant", "tech consultant", "advisory", "it advisory"],
+      "parent": "Information Technology",
+      "related": ["Software Development", "Cybersecurity"],
+      "description": "IT consulting and advisory services"
+    },
+    "Infrastructure": {
+      "synonyms": ["infrastructure", "network", "data center", "hosting", "infrastructure services", "it infrastructure"],
+      "parent": "Information Technology",
+      "related": ["Cloud Services", "Information Technology"],
+      "description": "IT infrastructure and hosting"
+    },
+    "Compliance": {
+      "synonyms": ["compliance", "regulatory", "audit", "governance", "risk compliance", "audit services"],
+      "parent": null,
+      "related": ["Risk Management", "Cybersecurity"],
+      "description": "Compliance and regulatory services"
+    },
+    "Risk Management": {
+      "synonyms": ["risk", "risk management", "risk assessment", "risk analysis", "risk mitigation"],
+      "parent": "Compliance",
+      "related": ["Compliance", "Cybersecurity"],
+      "description": "Risk management and assessment"
+    },
+    "Financial Services": {
+      "synonyms": ["financial", "finance", "banking", "fintech", "payment", "financial services"],
+      "parent": null,
+      "related": ["Compliance", "Risk Management"],
+      "description": "Financial services and fintech"
+    },
+    "Consulting": {
+      "synonyms": ["consulting", "consultant", "advisory", "strategy", "management consulting"],
+      "parent": null,
+      "related": ["IT Consulting", "Risk Management"],
+      "description": "General consulting services"
+    },
+    "Business Services": {
+      "synonyms": ["business", "services", "business services", "professional services", "corporate"],
+      "parent": null,
+      "related": ["Consulting", "Compliance"],
+      "description": "General business services"
+    },
+    "Hardware & Equipment": {
+      "synonyms": ["hardware", "equipment", "devices", "networking", "computers", "servers"],
+      "parent": "Information Technology",
+      "related": ["Infrastructure"],
+      "description": "Hardware and IT equipment"
+    }
+  },
+  "fuzzy_match_rules": {
+    "min_threshold": 0.75,
+    "high_confidence": 0.85,
+    "fallback_to_related": true,
+    "notes": "When exact industry match fails, check related industries"
+  }
+}

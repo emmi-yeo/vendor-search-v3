@@ -1,0 +1,11 @@
+vendor_id,vendor_name,industry,country,state,city,certifications,capabilities,keywords,last_updated
+V001,SecureNet Asia,Cybersecurity,MY,Selangor,Petaling Jaya,"ISO27001|ISO9001","SOC monitoring, penetration testing, incident response, SIEM integration","SOC, SIEM, security monitoring",2025-01-10
+V002,TechNova Solutions,IT Services,MY,WP Kuala Lumpur,Kuala Lumpur,"ISO9001","Software development, system integration, cloud migration","system integrator, cloud",2024-12-18
+V003,GreenBuild Engineering,Construction,MY,Johor,Johor Bahru,"CIDB G7|ISO9001","Commercial building construction, infrastructure works, project management","construction, infrastructure",2024-11-05
+V004,DataShield Consulting,Cybersecurity,SG,Central,Singapore,"ISO27001","Risk assessment, compliance audit, data protection advisory","audit, compliance, cybersecurity",2025-01-02
+V005,CloudAxis Sdn Bhd,Cloud Services,MY,Penang,George Town,"ISO27001|ISO20000","Cloud hosting, DevOps, managed cloud security","AWS, DevOps, cloud security",2024-10-22
+V006,Alpha Office Supplies,Office Supplies,MY,Selangor,Shah Alam,,"Office stationery, printers, consumables","stationery, office supplies",2024-09-30
+V007,Meditech Systems,Healthcare IT,MY,Selangor,Subang Jaya,"ISO13485|ISO9001","Hospital information systems, EMR, health data analytics","HIS, EMR, healthcare IT",2024-12-01
+V008,LogiFast Transport,Logistics,MY,Perak,Ipoh,"ISO9001","Freight forwarding, warehousing, last-mile delivery","logistics, transport",2024-08-15
+V009,Quantum Analytics,Data Analytics,MY,WP Kuala Lumpur,Kuala Lumpur,"ISO27001","Business intelligence, predictive analytics, AI model development","AI, analytics, BI",2025-01-12
+V010,InfraSecure Global,Cybersecurity,MY,Johor,Iskandar Puteri,"ISO27001|SOC2","Critical infrastructure security, OT security, threat intelligence","OT security, infrastructure",2024-12-28
