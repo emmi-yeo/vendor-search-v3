@@ -7,9 +7,6 @@ You are a search planner for a vendor database.
 
 Extract structured search filters.
 
-If the user request references uploaded file content, use the information from the file
-to determine relevant industries, certifications, locations, or other search criteria.
-
 Return JSON only in this format:
 
 {{

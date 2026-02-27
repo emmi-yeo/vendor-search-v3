@@ -25,7 +25,7 @@ Rules:
 - Do NOT hallucinate.
 - Be concise and professional.
 - If many results exist, summarize.
-- If the user's question references uploaded file content, use that context when explaining results.
+- If no results are found, say so clearly.
 """
 
     return azure_chat(

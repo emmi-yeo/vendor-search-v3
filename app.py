@@ -13,7 +13,7 @@ from src.retrieval import search
 from src.export import export_to_csv, export_to_excel, export_to_pdf
 from src.vendor_context import get_vendor_context
 from src.duplicate_detection import find_duplicate_vendors
-from src.file_processor import process_uploaded_files, format_file_content_for_llm
+
 from src.vendor_context_query import detect_context_query, answer_context_query
 from src.external_enrichment import build_enrichment_profile, is_enrichment_enabled
 from src.intent_router import route_intent
@@ -358,80 +358,6 @@ if "pending_query" in st.session_state and st.session_state.pending_query:
     # Clear it after reading
     del st.session_state.pending_query
 
-ALLOWED_FILE_TYPES = ["pdf", "docx", "xlsx", "xls", "png", "jpg", "jpeg"]
-ALLOWED_EXTENSIONS = {f".{ext}" for ext in ALLOWED_FILE_TYPES}
-MAX_UPLOAD_SIZE_MB = 10
-
-def validate_uploaded_file(uploaded_file):
-    filename = uploaded_file.name.lower()
-
-    # 1️⃣ Extension validation
-    _, ext = os.path.splitext(filename)
-
-    if not ext:
-        return False, "File has no extension."
-
-    if ext not in ALLOWED_EXTENSIONS:
-        return False, f"Unsupported file type: {ext}. Allowed types: {', '.join(ALLOWED_FILE_TYPES)}"
-
-    # 2️⃣ Size validation
-    file_size_mb = uploaded_file.size / (1024 * 1024)
-
-    if file_size_mb > MAX_UPLOAD_SIZE_MB:
-        return False, f"File too large ({file_size_mb:.2f}MB). Maximum allowed size is {MAX_UPLOAD_SIZE_MB}MB."
-
-    # 3️⃣ Empty file validation
-    if uploaded_file.size == 0:
-        return False, "Uploaded file is empty."
-
-    return True, "Valid"
-
-supporting_files = st.file_uploader(
-    "📎 Upload supporting files",
-    type=ALLOWED_FILE_TYPES,
-    accept_multiple_files=True,
-    key="file_uploader"
-)
-
-# Initialize file validation state
-if "file_validation_error" not in st.session_state:
-    st.session_state.file_validation_error = None
-if "validated_files" not in st.session_state:
-    st.session_state.validated_files = []
-if "file_contents" not in st.session_state:
-    st.session_state.file_contents = {}
-if "last_uploaded_files" not in st.session_state:
-    st.session_state.last_uploaded_files = None
-
-# Only revalidate if files changed
-if supporting_files != st.session_state.last_uploaded_files:
-
-    st.session_state.file_validation_error = None
-    st.session_state.validated_files = []
-    st.session_state.file_contents = {}
-
-    if supporting_files:
-        for file in supporting_files:
-            is_valid, message = validate_uploaded_file(file)
-
-            if not is_valid:
-                st.session_state.file_validation_error = message
-                break
-
-            st.session_state.validated_files.append(file)
-
-        if not st.session_state.file_validation_error:
-            with st.spinner("Processing uploaded files..."):
-                st.session_state.file_contents = process_uploaded_files(
-                    st.session_state.validated_files
-                )
-
-            if not st.session_state.file_contents:
-                st.session_state.file_validation_error = (
-                    "The uploaded file contains no readable content."
-                )
-
-    st.session_state.last_uploaded_files = supporting_files
 def is_rate_limited(max_requests=10, window_seconds=60):
     now = time.time()
 
@@ -446,9 +372,7 @@ def is_rate_limited(max_requests=10, window_seconds=60):
 
     st.session_state.request_timestamps.append(now)
     return False
-# Show error if exists
-if st.session_state.file_validation_error:
-    st.error(st.session_state.file_validation_error)
+
 def llm_prompt_quality_check(text: str):
     """
     Ask LLM whether the prompt is meaningful enough
@@ -485,7 +409,7 @@ def llm_prompt_quality_check(text: str):
 # New user input - always at the bottom
 user_input = st.chat_input("Ask for vendors in natural language…")   
     
-# Handle user input (text and/or files) OR pending query from prompt button
+# Handle user input OR pending query from prompt button
 if user_input or pending_query:
 
     user_text = pending_query if pending_query else user_input
@@ -511,32 +435,8 @@ if user_input or pending_query:
             "content": "🚦 Too many requests. Please wait a moment before trying again."
         })
         st.rerun()
-    # 🚨 Block search if file validation failed
-    if st.session_state.file_validation_error:
-        st.warning("Please fix the file upload issue before searching.")
-        st.stop()
-
-    # ------------------------------------------------------------------
-    # 📂 FILE CONTEXT — COMPUTED EARLY so all LLM calls can see it
-    # ------------------------------------------------------------------
-    file_context = ""
-    if st.session_state.file_contents:
-        file_context = format_file_content_for_llm(st.session_state.file_contents, max_length=8000)
-
-    # Build an enriched query that carries file content for all LLM-facing calls.
-    # The raw user_text is kept for display; effective_query is used for LLM operations.
-    if file_context:
-        file_names = ", ".join(st.session_state.file_contents.keys())
-        effective_query = (
-            f"{user_text}\n\n"
-            f"[The user attached the following file(s): {file_names}]\n"
-            f"[Attached File Content]\n{file_context}"
-        )
-    else:
-        effective_query = user_text
-
-    # 🤖 LLM-based prompt quality validation (uses enriched query so it sees file context)
-    status, message = llm_prompt_quality_check(effective_query)
+    # 🤖 LLM-based prompt quality validation
+    status, message = llm_prompt_quality_check(user_text)
 
     if status == "invalid":
         st.session_state.messages.append({
@@ -580,7 +480,6 @@ if user_input or pending_query:
 
     # ------------------------------------------------------------------
     # 🌍 QUERY TRANSLATION LAYER (BM / EN / MIXED → EN)
-    # Translate user text only (not file content — avoid corrupting documents)
     # ------------------------------------------------------------------
 
     translated_text = translate_query_to_english(user_text)
@@ -592,25 +491,12 @@ if user_input or pending_query:
             "content": f"_🔄 Interpreted your query as:_ **{translated_text}**"
         })
 
-    # Build enriched translated text for downstream LLM calls.
-    # translated_text = clean user query (for FAISS/BM25 search)
-    # effective_translated = translated query + file content (for all LLM calls)
-    if file_context:
-        file_names = ", ".join(st.session_state.file_contents.keys())
-        effective_translated = (
-            f"{translated_text}\n\n"
-            f"[The user attached the following file(s): {file_names}]\n"
-            f"[Attached File Content]\n{file_context}"
-        )
-    else:
-        effective_translated = translated_text
-
     # ------------------------------------------------------------------
-    # 🔥 INTENT ROUTER (LLM-based) — uses enriched query so it knows about files
+    # 🔥 INTENT ROUTER (LLM-based)
     # ------------------------------------------------------------------
 
     recent_vendor_ids = []
-    intent_result = route_intent(effective_translated, recent_vendor_ids)
+    intent_result = route_intent(translated_text, recent_vendor_ids)
     intent = intent_result.get("intent")
 
 
@@ -647,155 +533,103 @@ if user_input or pending_query:
         })
         st.rerun()
 
-    # ---- 3️⃣ OTHERWISE → CONTINUE (vendor_search) ----
-    # Check if user is asking about the file content itself (not searching for vendors)
-    file_analysis_queries = [
-        "what's in", "what is in", "what's this file", "what is this file",
-        "what company", "which company", "who is this file for", "what organization",
-        "summarize", "summary", "describe", "explain", "analyze this file",
-        "what does this file", "tell me about this file", "what's in the file",
-        "what information", "what details", "what data", "extract information"
+    # ------------------------------------------------------------------
+    # 🤖 AI-DRIVEN SEARCH EXECUTION
+    # ------------------------------------------------------------------
+
+    # 🔒 Prevent full database dump
+    dangerous_phrases = [
+        "all vendors",
+        "entire database",
+        "full list",
+        "everything",
+        "show all"
     ]
-        
-    is_file_analysis_query = supporting_files and file_context and any(
-        phrase in user_text.lower() for phrase in file_analysis_queries
-    )
-        
-    # If user is asking about the file, analyze it directly
-    if is_file_analysis_query:
-        # Route to file analysis instead of vendor search
-        analysis_prompt = f"""Analyze the uploaded file(s) and answer the user's question in detail.
 
-User question: {translated_text}
-
-File content:
-{file_context}
-
-Please provide a clear, comprehensive answer about the file content. If the question is about a company/organization, extract and identify it. If asking for a summary, provide a structured overview of the document."""
-            
-        from src.azure_llm import azure_chat as groq_chat
-        messages = [
-            {"role": "system", "content": "You are a helpful assistant that analyzes documents and answers questions about their content. Provide detailed, accurate answers based on the file content."},
-            {"role": "user", "content": analysis_prompt}
-        ]
-            
-        with st.spinner("Analyzing file content..."):
-            analysis_response = groq_chat(messages, temperature=0.3)
-            
-        # Display the analysis directly
+    if any(p in translated_text.lower() for p in dangerous_phrases):
         st.session_state.messages.append({
-            "role": "assistant", 
-            "content": analysis_response
+            "role": "assistant",
+            "content": (
+                "For governance and performance reasons, "
+                "I cannot display the full vendor database at once.\n\n"
+                "Please narrow your request by industry, location, "
+                "certification, or capability."
+            )
         })
         st.rerun()
-        
-    # Check if user is asking about vendor context (performance, sourcing events, etc.)
-    # Only check if not a file analysis query
-    context_query_handled = False
 
-    # ------------------------------------------------------------------
-    # 🤖 AI-DRIVEN SEARCH EXECUTION (REPLACES OLD PARSE LOGIC)
-    # ------------------------------------------------------------------
+    # 🧠 1️⃣ Intent Classification
+    intent_data = classify_intent(translated_text)
+    ai_intent = intent_data.get("intent", "search_vendors")
 
-    if not is_file_analysis_query and not context_query_handled:
+    # 🧮 2️⃣ Aggregation Requests
+    if ai_intent == "aggregate":
+        plan = generate_search_plan(translated_text)
 
-        # 🔒 Prevent full database dump
-        dangerous_phrases = [
-            "all vendors",
-            "entire database",
-            "full list",
-            "everything",
-            "show all"
-        ]
+        aggregation_result = aggregate_vendors(meta, plan["filters"])
 
-        if any(p in translated_text.lower() for p in dangerous_phrases):
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": (
-                    "For governance and performance reasons, "
-                    "I cannot display the full vendor database at once.\n\n"
-                    "Please narrow your request by industry, location, "
-                    "certification, or capability."
-                )
-            })
-            st.rerun()
+        ai_reply = generate_response(
+            translated_text,
+            results=[],
+            aggregation=aggregation_result
+        )
 
-        # 🧠 1️⃣ Intent Classification (uses enriched query)
-        intent_data = classify_intent(effective_translated)
-        ai_intent = intent_data.get("intent", "search_vendors")
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": ai_reply
+        })
 
-        # 🧮 2️⃣ Aggregation Requests
-        if ai_intent == "aggregate":
-            plan = generate_search_plan(effective_translated)
+        st.rerun()
 
-            aggregation_result = aggregate_vendors(meta, plan["filters"])
+    # 🔍 3️⃣ Vendor Search
+    if ai_intent == "search_vendors":
 
-            ai_reply = generate_response(
-                effective_translated,
-                results=[],
-                aggregation=aggregation_result
-            )
+        plan = generate_search_plan(translated_text)
 
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": ai_reply
-            })
+        filters = plan.get("filters", {})
+        # Dynamic threshold - retrieve all relevant results, pagination handles display
+        limit = 50
 
-            st.rerun()
+        results, filter_warning, show_only_top = search(
+            index,
+            bm25,
+            docs,
+            meta,
+            translated_text,
+            filters,
+            {},
+            [],
+            "",
+            top_k=limit
+        )
 
-        # 🔍 3️⃣ Vendor Search
-        if ai_intent == "search_vendors":
+        sort_key = SORT_OPTIONS.get(sort_by, "relevance")
+        results = sort_results(results, sort_key)
 
-            # Planner sees enriched query (with file content) to extract filters
-            plan = generate_search_plan(effective_translated)
+        st.session_state.last_results = results
+        st.session_state.last_query = plan
 
-            filters = plan.get("filters", {})
-            # Dynamic threshold - retrieve all relevant results, pagination handles display
-            limit = 50
+        ai_reply = generate_response(
+            translated_text,
+            results=results
+        )
 
-            # FAISS/BM25 search uses clean translated_text (no file content)
-            # to keep vector/keyword matching accurate
-            results, filter_warning, show_only_top = search(
-                index,
-                bm25,
-                docs,
-                meta,
-                translated_text,
-                filters,
-                {},
-                [],
-                "",
-                top_k=limit
-            )
-
-            sort_key = SORT_OPTIONS.get(sort_by, "relevance")
-            results = sort_results(results, sort_key)
-
-            st.session_state.last_results = results
-            st.session_state.last_query = plan
-
-            # Responder sees enriched query so it can reference file content
-            ai_reply = generate_response(
-                effective_translated,
-                results=results
-            )
-
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": ai_reply,
-                "table": {
-                    "results": results,
-                    "query_json": {
-                        "render_id": str(uuid.uuid4())
-                    }
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": ai_reply,
+            "table": {
+                "results": results,
+                "query_json": {
+                    "render_id": str(uuid.uuid4())
                 }
-            })
+            }
+        })
 
-            st.rerun()
+        st.rerun()
 
-        else:
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "I couldn't interpret that request clearly. Could you rephrase it?"
-            })
-            st.rerun()
+    else:
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": "I couldn't interpret that request clearly. Could you rephrase it?"
+        })
+        st.rerun()

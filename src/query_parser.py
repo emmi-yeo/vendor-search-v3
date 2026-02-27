@@ -68,16 +68,11 @@ Rules:
 """
 
 
-def parse_query(model: str, user_text: str, ui_filters: dict, file_context: str = "") -> dict:
+def parse_query(model: str, user_text: str, ui_filters: dict) -> dict:
     # ui_filters lets you blend sidebar selections with LLM extraction
     # LLM should not overwrite explicit UI filters; it can add missing ones.
     
-    # Build user message with file context if available
     user_message = f"User query: {user_text}\nUI filters (authoritative if set): {json.dumps(ui_filters)}"
-    
-    if file_context:
-        user_message += f"\n\n--- Uploaded File Content ---\n{file_context}\n--- End File Content ---\n\n"
-        user_message += "Please analyze the uploaded file(s) content above and incorporate relevant information into the vendor search query. Extract requirements, specifications, or criteria mentioned in the files."
     
     messages = [
         {"role": "system", "content": PARSER_SYSTEM},
