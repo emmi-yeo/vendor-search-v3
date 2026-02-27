@@ -511,8 +511,32 @@ if user_input or pending_query:
             "content": "🚦 Too many requests. Please wait a moment before trying again."
         })
         st.rerun()
-    # 🤖 LLM-based prompt quality validation
-    status, message = llm_prompt_quality_check(user_text)
+    # 🚨 Block search if file validation failed
+    if st.session_state.file_validation_error:
+        st.warning("Please fix the file upload issue before searching.")
+        st.stop()
+
+    # ------------------------------------------------------------------
+    # 📂 FILE CONTEXT — COMPUTED EARLY so all LLM calls can see it
+    # ------------------------------------------------------------------
+    file_context = ""
+    if st.session_state.file_contents:
+        file_context = format_file_content_for_llm(st.session_state.file_contents, max_length=8000)
+
+    # Build an enriched query that carries file content for all LLM-facing calls.
+    # The raw user_text is kept for display; effective_query is used for LLM operations.
+    if file_context:
+        file_names = ", ".join(st.session_state.file_contents.keys())
+        effective_query = (
+            f"{user_text}\n\n"
+            f"[The user attached the following file(s): {file_names}]\n"
+            f"[Attached File Content]\n{file_context}"
+        )
+    else:
+        effective_query = user_text
+
+    # 🤖 LLM-based prompt quality validation (uses enriched query so it sees file context)
+    status, message = llm_prompt_quality_check(effective_query)
 
     if status == "invalid":
         st.session_state.messages.append({
@@ -521,20 +545,6 @@ if user_input or pending_query:
         })
         st.rerun()
 
-    # 🚨 Block search if file validation failed
-    if st.session_state.file_validation_error:
-        st.warning("Please fix the file upload issue before searching.")
-        st.stop()
-
-    # Process text input (or file-only input)
-    #if user_text:
-        # Add user message to session state (will be rendered in the loop above on rerun)
-    #    message_content = user_text
-    #    if st.session_state.validated_files:
-    #        file_info = " | Files: " + ", ".join([f.name for f in st.session_state.validated_files])
-    #        message_content += file_info
-    #    st.session_state.messages.append({"role": "user", "content": message_content})
-        
     # --------------------------------------------------
     # 🎨 PRESENTATION-ONLY COMMAND (NEW TABLE, SAME DATA)
     # --------------------------------------------------
@@ -558,7 +568,7 @@ if user_input or pending_query:
         # Create a NEW assistant message with SAME results, NEW presentation
         st.session_state.messages.append({
             "role": "assistant",
-            "content": "Here’s the updated view based on your request:",
+            "content": "Here's the updated view based on your request:",
             "table": {
                 "results": st.session_state.last_results,
                 "query_json": q
@@ -568,19 +578,9 @@ if user_input or pending_query:
 
         st.rerun()
 
-
-    # Format file content for LLM (include in query context)
-    file_context = ""
-    if st.session_state.file_contents:
-        file_context = format_file_content_for_llm(st.session_state.file_contents, max_length=8000)
-    # ------------------------------------------------------------------
-    # 🔥 INTENT ROUTER (LLM-based) — MUST RUN BEFORE ANY SEARCH / CONTEXT
-    # ------------------------------------------------------------------
-
-    recent_vendor_ids = []
-
     # ------------------------------------------------------------------
     # 🌍 QUERY TRANSLATION LAYER (BM / EN / MIXED → EN)
+    # Translate user text only (not file content — avoid corrupting documents)
     # ------------------------------------------------------------------
 
     translated_text = translate_query_to_english(user_text)
@@ -592,11 +592,25 @@ if user_input or pending_query:
             "content": f"_🔄 Interpreted your query as:_ **{translated_text}**"
         })
 
+    # Build enriched translated text for downstream LLM calls.
+    # translated_text = clean user query (for FAISS/BM25 search)
+    # effective_translated = translated query + file content (for all LLM calls)
+    if file_context:
+        file_names = ", ".join(st.session_state.file_contents.keys())
+        effective_translated = (
+            f"{translated_text}\n\n"
+            f"[The user attached the following file(s): {file_names}]\n"
+            f"[Attached File Content]\n{file_context}"
+        )
+    else:
+        effective_translated = translated_text
+
     # ------------------------------------------------------------------
-    # 🔥 INTENT ROUTER (LLM-based)
+    # 🔥 INTENT ROUTER (LLM-based) — uses enriched query so it knows about files
     # ------------------------------------------------------------------
 
-    intent_result = route_intent(translated_text, recent_vendor_ids)
+    recent_vendor_ids = []
+    intent_result = route_intent(effective_translated, recent_vendor_ids)
     intent = intent_result.get("intent")
 
 
@@ -607,10 +621,10 @@ if user_input or pending_query:
             "content": (
                 "Hi 👋 I can help you with:\n\n"
                 "- 🔍 Finding vendors by capability, industry, location\n"
-                "- 📄 Checking a vendor’s certifications or profile\n"
+                "- 📄 Checking a vendor's certifications or profile\n"
                 "- 📊 Reviewing spend, performance, and compliance\n\n"
                 "Try something like:\n"
-                "_“Cybersecurity vendors in Malaysia with ISO27001”_"
+                "_"Cybersecurity vendors in Malaysia with ISO27001"_"
             )
         })
         st.rerun()
@@ -706,21 +720,20 @@ Please provide a clear, comprehensive answer about the file content. If the ques
             })
             st.rerun()
 
-        # 🧠 1️⃣ Intent Classification
-        intent_data = classify_intent(translated_text)
+        # 🧠 1️⃣ Intent Classification (uses enriched query)
+        intent_data = classify_intent(effective_translated)
         ai_intent = intent_data.get("intent", "search_vendors")
 
         # 🧮 2️⃣ Aggregation Requests
         if ai_intent == "aggregate":
-            plan = generate_search_plan(translated_text, file_context=file_context)
+            plan = generate_search_plan(effective_translated)
 
             aggregation_result = aggregate_vendors(meta, plan["filters"])
 
             ai_reply = generate_response(
-                translated_text,
+                effective_translated,
                 results=[],
-                aggregation=aggregation_result,
-                file_context=file_context
+                aggregation=aggregation_result
             )
 
             st.session_state.messages.append({
@@ -733,12 +746,15 @@ Please provide a clear, comprehensive answer about the file content. If the ques
         # 🔍 3️⃣ Vendor Search
         if ai_intent == "search_vendors":
 
-            plan = generate_search_plan(translated_text, file_context=file_context)
+            # Planner sees enriched query (with file content) to extract filters
+            plan = generate_search_plan(effective_translated)
 
             filters = plan.get("filters", {})
             # Dynamic threshold - retrieve all relevant results, pagination handles display
             limit = 50
 
+            # FAISS/BM25 search uses clean translated_text (no file content)
+            # to keep vector/keyword matching accurate
             results, filter_warning, show_only_top = search(
                 index,
                 bm25,
@@ -758,10 +774,10 @@ Please provide a clear, comprehensive answer about the file content. If the ques
             st.session_state.last_results = results
             st.session_state.last_query = plan
 
+            # Responder sees enriched query so it can reference file content
             ai_reply = generate_response(
-                translated_text,
-                results=results,
-                file_context=file_context
+                effective_translated,
+                results=results
             )
 
             st.session_state.messages.append({
@@ -780,6 +796,6 @@ Please provide a clear, comprehensive answer about the file content. If the ques
         else:
             st.session_state.messages.append({
                 "role": "assistant",
-                "content": "I couldn’t interpret that request clearly. Could you rephrase it?"
+                "content": "I couldn't interpret that request clearly. Could you rephrase it?"
             })
             st.rerun()

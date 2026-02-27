@@ -1,22 +1,14 @@
 import json
 from src.azure_llm import azure_chat
 
-def generate_search_plan(user_text: str, file_context: str = "") -> dict:
-    file_section = ""
-    if file_context:
-        file_section = f"""
-
---- Uploaded File Content ---
-{file_context}
---- End File Content ---
-
-Also analyze the uploaded file(s) above and incorporate any relevant requirements, specifications, industries, certifications, or locations into the search filters.
-"""
-
+def generate_search_plan(user_text: str) -> dict:
     prompt = f"""
 You are a search planner for a vendor database.
 
 Extract structured search filters.
+
+If the user request references uploaded file content, use the information from the file
+to determine relevant industries, certifications, locations, or other search criteria.
 
 Return JSON only in this format:
 
@@ -36,7 +28,7 @@ Return JSON only in this format:
 
 User request:
 "{user_text}"
-{file_section}"""
+"""
 
     response = azure_chat(
         messages=[{"role": "user", "content": prompt}],
