@@ -99,22 +99,67 @@ def _build_llm_prompt(
     return [system, {"role": "user", "content": user_content}]
 
 
+def _direct_answer(
+    file_texts: List[str], filenames: List[str], user_query: Optional[str]
+) -> str:
+    """Fallback: ask the LLM to answer the question directly (no JSON routing).
+
+    Used when the structured ``interpret_files`` call returns an empty or
+    unusable ``text`` field for non-search actions.
+    """
+    from src.azure_llm import azure_chat
+
+    doc_block = ""
+    for name, txt in zip(filenames, file_texts):
+        doc_block += f"\n---\nFilename: {name}\n{txt}\n"
+
+    query_part = user_query or "Summarize the document(s)."
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a helpful assistant. The user has uploaded one or more "
+                "documents. Answer the user's question based on the document "
+                "content below. Be detailed and accurate."
+            ),
+        },
+        {
+            "role": "user",
+            "content": f"{query_part}\n\nDocuments:\n{doc_block}",
+        },
+    ]
+    return azure_chat(messages, temperature=0.3, max_tokens=2048)
+
+
 def interpret_files(
     file_texts: List[str], filenames: List[str], user_query: Optional[str]
 ) -> dict:
     """Ask the LLM what should be done with the supplied documents.
 
     Returns the parsed JSON response or a fallback when the model returns
-    something unparseable.
+    something unparseable.  If the structured response has an empty ``text``
+    field for a non-search action, a direct (non-JSON) LLM call is made as
+    a retry so that the user always gets a substantive answer.
     """
     from src.azure_llm import azure_chat
 
     messages = _build_llm_prompt(file_texts, filenames, user_query)
     resp = azure_chat(messages, temperature=0.2, max_tokens=2048)
     try:
-        return json.loads(resp)
+        result = json.loads(resp)
     except Exception:
-        return {"action": "respond", "text": resp}
+        result = {"action": "respond", "text": resp}
+
+    # If the structured call produced a non-search action with empty text,
+    # retry with a simple direct prompt so the user gets a real answer.
+    if result.get("action") != "search":
+        text = (result.get("text") or "").strip()
+        if not text:
+            text = _direct_answer(file_texts, filenames, user_query)
+            result = {"action": "respond", "text": text}
+
+    return result
 
 
 def handle_uploaded_files(uploaded_files, user_query: Optional[str] = None) -> dict:

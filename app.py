@@ -449,7 +449,6 @@ if uploaded_files:
         if fp != st.session_state.get("_files_fingerprint"):
             st.session_state.uploaded_files = uploaded_files
             st.session_state._files_fingerprint = fp
-            st.session_state.pop("_files_processed_fp", None)  # allow processing
 
 # show list of currently stored uploads with clear button
 if st.session_state.get("uploaded_files"):
@@ -458,7 +457,6 @@ if st.session_state.get("uploaded_files"):
     if st.button("Clear uploads", key="clear_uploads"):
         st.session_state.pop("uploaded_files", None)
         st.session_state.pop("_files_fingerprint", None)
-        st.session_state.pop("_files_processed_fp", None)
         st.rerun()
 
 # New user input - always at the bottom
@@ -476,14 +474,7 @@ if user_input or pending_query:
     })
 
     # ---- process uploaded files if any ----
-    # Use fingerprint-based guard: only process if this batch hasn't been processed yet
-    _current_fp = st.session_state.get("_files_fingerprint")
-    _already_processed = (
-        _current_fp is not None
-        and _current_fp == st.session_state.get("_files_processed_fp")
-    )
-
-    if st.session_state.get("uploaded_files") and not _already_processed:
+    if st.session_state.get("uploaded_files"):
         try:
             file_result = handle_uploaded_files(
                 st.session_state.uploaded_files,
@@ -494,12 +485,7 @@ if user_input or pending_query:
                 "role": "assistant",
                 "content": f"⚠️ {ve}"
             })
-            # mark this fingerprint as processed so we don't retry
-            st.session_state._files_processed_fp = _current_fp
             st.rerun()
-
-        # mark this fingerprint as processed
-        st.session_state._files_processed_fp = _current_fp
 
         if file_result.get("action") == "search":
             query_json = {"search_text": file_result.get("search_query", ""), "filters": {}}
