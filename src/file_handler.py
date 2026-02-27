@@ -11,7 +11,8 @@ import docx
 # Allowed types and limits
 ALLOWED_EXTENSIONS = {"pdf", "docx", "xlsx", "xls", "png", "jpg", "jpeg"}
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
-MAX_TEXT_LENGTH = 15_000  # characters; rough token budget
+MAX_TEXT_LENGTH = 15_000  # characters per file; rough token budget
+MAX_TOTAL_TEXT = 30_000  # characters across all files combined
 
 
 def validate_file(uploaded_file) -> bool:
@@ -109,7 +110,7 @@ def interpret_files(
     from src.azure_llm import azure_chat
 
     messages = _build_llm_prompt(file_texts, filenames, user_query)
-    resp = azure_chat(messages, temperature=0.2, max_tokens=1024)
+    resp = azure_chat(messages, temperature=0.2, max_tokens=2048)
     try:
         return json.loads(resp)
     except Exception:
@@ -127,8 +128,20 @@ def handle_uploaded_files(uploaded_files, user_query: Optional[str] = None) -> d
     texts: List[str] = []
     for f in uploaded_files:
         validate_file(f)
+        f.seek(0)  # reset stream position in case file was already read
         content = f.read()
         filenames.append(f.name)
         texts.append(extract_text_from_file(content, f.name))
+
+    # Enforce a total-text budget so multi-file prompts stay within context limits.
+    # Distribute the budget evenly across files and trim proportionally.
+    total_len = sum(len(t) for t in texts)
+    if total_len > MAX_TOTAL_TEXT and texts:
+        per_file_budget = MAX_TOTAL_TEXT // len(texts)
+        texts = [
+            t[:per_file_budget] + "\n...[truncated]" if len(t) > per_file_budget else t
+            for t in texts
+        ]
+
     decision = interpret_files(texts, filenames, user_query)
     return decision

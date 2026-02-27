@@ -115,7 +115,7 @@ if "request_timestamps" not in st.session_state:
 # ---- Chat state ----
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Hi! Describe the vendor you need (capabilities, industry, location, certifications). I’ll search vendor profiles + attachments + transactions."}
+        {"role": "assistant", "content": "Hi! Describe the vendor you need (capabilities, industry, location, certifications). I'll search vendor profiles + attachments + transactions."}
     ]
 if "last_query" not in st.session_state:
     st.session_state.last_query = None
@@ -418,8 +418,12 @@ def llm_prompt_quality_check(text: str):
 
 
 # ---- file upload support ----
+def _file_fingerprint(files):
+    """Build a hashable fingerprint from file names and sizes."""
+    return tuple(sorted((f.name, f.size) for f in files))
+
 uploaded_files = st.file_uploader(
-    "Upload document(s) (PDF/DOCX/XLSX/XLS/PNG/JPG, max 100 MB each)",
+    "Upload document(s) (PDF/DOCX/XLSX/XLS/PNG/JPG, max 100 MB each)",
     type=list(ALLOWED_EXTENSIONS),
     accept_multiple_files=True,
 )
@@ -436,15 +440,16 @@ if uploaded_files:
     if errors:
         for err in errors:
             st.error(err)
-        # drop the invalid selection so the user can try again
         st.session_state.pop("uploaded_files", None)
-        st.session_state.file_processed = True
+        st.session_state.pop("_files_fingerprint", None)
         uploaded_files = []
     else:
-        # new batch; mark unprocessed
-        if st.session_state.get("file_processed", True):
+        fp = _file_fingerprint(uploaded_files)
+        # Only store when the fingerprint changes (new or different batch)
+        if fp != st.session_state.get("_files_fingerprint"):
             st.session_state.uploaded_files = uploaded_files
-            st.session_state.file_processed = False
+            st.session_state._files_fingerprint = fp
+            st.session_state.pop("_files_processed_fp", None)  # allow processing
 
 # show list of currently stored uploads with clear button
 if st.session_state.get("uploaded_files"):
@@ -452,8 +457,9 @@ if st.session_state.get("uploaded_files"):
     st.markdown(f"**Uploaded:** {', '.join(names)}")
     if st.button("Clear uploads", key="clear_uploads"):
         st.session_state.pop("uploaded_files", None)
-        st.session_state.file_processed = True
-        st.experimental_rerun()
+        st.session_state.pop("_files_fingerprint", None)
+        st.session_state.pop("_files_processed_fp", None)
+        st.rerun()
 
 # New user input - always at the bottom
 user_input = st.chat_input("Ask for vendors in natural language…")   
@@ -470,7 +476,14 @@ if user_input or pending_query:
     })
 
     # ---- process uploaded files if any ----
-    if st.session_state.get("uploaded_files") and not st.session_state.get("file_processed", False):
+    # Use fingerprint-based guard: only process if this batch hasn't been processed yet
+    _current_fp = st.session_state.get("_files_fingerprint")
+    _already_processed = (
+        _current_fp is not None
+        and _current_fp == st.session_state.get("_files_processed_fp")
+    )
+
+    if st.session_state.get("uploaded_files") and not _already_processed:
         try:
             file_result = handle_uploaded_files(
                 st.session_state.uploaded_files,
@@ -481,18 +494,17 @@ if user_input or pending_query:
                 "role": "assistant",
                 "content": f"⚠️ {ve}"
             })
-            st.session_state.file_processed = True
-            st.session_state.pop("uploaded_files", None)
+            # mark this fingerprint as processed so we don't retry
+            st.session_state._files_processed_fp = _current_fp
             st.rerun()
 
-        # mark as done and clear batch
-        st.session_state.file_processed = True
-        st.session_state.pop("uploaded_files", None)
+        # mark this fingerprint as processed
+        st.session_state._files_processed_fp = _current_fp
 
         if file_result.get("action") == "search":
             query_json = {"search_text": file_result.get("search_query", ""), "filters": {}}
             results, filter_warning, show_only_top = run_search_from_query(query_json)
-            ai_reply = generate_response(file_result.get("search_query", ""))
+            ai_reply = generate_response(file_result.get("search_query", ""), results=results)
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": ai_reply,
@@ -503,9 +515,12 @@ if user_input or pending_query:
             })
             st.rerun()
         else:
+            reply_text = file_result.get("text", "")
+            if not reply_text or not reply_text.strip():
+                reply_text = "I processed the uploaded file(s) but could not extract a meaningful answer. Please try rephrasing your question."
             st.session_state.messages.append({
                 "role": "assistant",
-                "content": file_result.get("text", "")
+                "content": reply_text
             })
             st.rerun()
 
